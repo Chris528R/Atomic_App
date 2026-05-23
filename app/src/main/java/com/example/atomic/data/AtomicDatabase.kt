@@ -5,9 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [UsageLog::class], version = 1, exportSchema = false)
+@Database(
+    entities = [UsageLog::class, BlockedApp::class, ActivePass::class],
+    version = 3,
+    exportSchema = false,
+)
 abstract class AtomicDatabase : RoomDatabase() {
     abstract fun usageLogDao(): UsageLogDao
+    abstract fun blockedAppDao(): BlockedAppDao
+    abstract fun activePassDao(): ActivePassDao
 
     companion object {
         @Volatile
@@ -19,7 +25,9 @@ abstract class AtomicDatabase : RoomDatabase() {
                     context.applicationContext,
                     AtomicDatabase::class.java,
                     "atomic_database",
-                ).build()
+                )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
                 INSTANCE = instance
                 instance
             }

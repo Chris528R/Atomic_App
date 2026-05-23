@@ -2,6 +2,7 @@ package com.example.atomic.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -20,6 +21,7 @@ import com.example.atomic.R
 
 private enum class MainTab {
     Permissions,
+    BlockedApps,
     Stats,
 }
 
@@ -27,6 +29,7 @@ private enum class MainTab {
 fun AtomicApp(
     permissionsUiState: PermissionsUiState,
     usageViewModel: UsageViewModel,
+    blockedAppsViewModel: BlockedAppsViewModel,
     onOpenOverlaySettings: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -44,6 +47,12 @@ fun AtomicApp(
                     label = { Text(stringResource(R.string.nav_permissions)) },
                 )
                 NavigationBarItem(
+                    selected = selectedTab == MainTab.BlockedApps,
+                    onClick = { selectedTab = MainTab.BlockedApps },
+                    icon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_blocked_apps)) },
+                )
+                NavigationBarItem(
                     selected = selectedTab == MainTab.Stats,
                     onClick = { selectedTab = MainTab.Stats },
                     icon = { Icon(Icons.Filled.List, contentDescription = null) },
@@ -57,6 +66,11 @@ fun AtomicApp(
                 uiState = permissionsUiState,
                 onOpenOverlaySettings = onOpenOverlaySettings,
                 onOpenAccessibilitySettings = onOpenAccessibilitySettings,
+                modifier = Modifier.padding(innerPadding),
+            )
+
+            MainTab.BlockedApps -> BlockedAppsScreen(
+                viewModel = blockedAppsViewModel,
                 modifier = Modifier.padding(innerPadding),
             )
 

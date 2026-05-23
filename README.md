@@ -48,20 +48,22 @@ Ayudar al usuario a tomar conciencia y control sobre el tiempo que pasa en apps 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                    MainActivity (launcher)                        │
-│  AtomicApp ─ NavigationBar: [ Permisos | Estadísticas ]          │
+│  AtomicApp ─ NavigationBar: [ Permisos | Apps | Estadísticas ]   │
 │    · PermissionsScreen + PermissionsViewModel                    │
+│    · BlockedAppsScreen + BlockedAppsViewModel ← Flow ← Room      │
 │    · StatsScreen + UsageViewModel ← Flow ← Room                    │
 └────────────────────────────┬─────────────────────────────────────┘
                              │ lectura (Flow)
 ┌────────────────────────────▼─────────────────────────────────────┐
 │                         Capa data/                                │
-│  AtomicDatabase · UsageLog · UsageLogDao (Flow)                    │
+│  AtomicDatabase · UsageLog · BlockedApp · DAOs (Flow)              │
 └────────────────────────────▲─────────────────────────────────────┘
                              │ insert (IO + Coroutines)
 ┌────────────────────────────┴─────────────────────────────────────┐
 │                    Capa intercepción (sistema)                    │
 │  AppTrackerService (AccessibilityService)                         │
 │    · TYPE_WINDOW_STATE_CHANGED                                    │
+│    · dynamicBlockedApps ← Flow (lista configurable)               │
 │    · unlockedApps (pases en memoria, 15 min)                      │
 │    · WindowOverlayManager → FrictionScreen (Compose overlay)      │
 └──────────────────────────────────────────────────────────────────┘
@@ -81,7 +83,11 @@ Ayudar al usuario a tomar conciencia y control sobre el tiempo que pasa en apps 
 | `WindowOverlayManager` | `overlay/WindowOverlayManager.kt` | Inyecta Compose en `TYPE_APPLICATION_OVERLAY`. |
 | `AppTrackerService` | `service/AppTrackerService.kt` | Detecta apps, gestiona pases y persiste logs. |
 | `AtomicDatabase` | `data/AtomicDatabase.kt` | Singleton Room (`atomic_database`). |
-| `UsageLog` / `UsageLogDao` | `data/` | Entidad, inserción y consulta reactiva. |
+| `UsageLog` / `UsageLogDao` | `data/` | Entidad, inserción y consulta reactiva de logs. |
+| `BlockedApp` / `BlockedAppDao` | `data/` | Apps bloqueadas configurables (`Flow` de packages). |
+| `BlockedAppsScreen` | `ui/BlockedAppsScreen.kt` | Lista de apps instaladas con switch on/off. |
+| `BlockedAppsViewModel` | `ui/BlockedAppsViewModel.kt` | PackageManager + Room; búsqueda y toggles. |
+| `getInstalledApps` | `util/InstalledApps.kt` | Apps de usuario (excluye sistema y Atomic). |
 | `PermissionChecker` | `util/PermissionChecker.kt` | Comprueba y abre pantallas de Ajustes. |
 | `resolveAppDisplayName` | `util/AppDisplayNames.kt` | Mapeo package → nombre legible. |
 
@@ -103,7 +109,7 @@ Ayudar al usuario a tomar conciencia y control sobre el tiempo que pasa en apps 
 unlockedApps[packageName] = unlockTime + (15 * 60 * 1000)
 ```
 
-Mientras `System.currentTimeMillis() < expiry`, la app bloqueada abre sin overlay. Los pases viven solo en RAM: se pierden si el servicio se reinicia.
+Mientras `System.currentTimeMillis() < expiry`, la app bloqueada abre sin overlay. Los pases se guardan ahora en Room (tabla `active_passes`) mediante un flujo reactivo, por lo que sobreviven a reinicios del servicio. Al expirar, se eliminan tanto de memoria como de la base de datos.
 
 ### 3. Estadísticas en tiempo real
 
@@ -113,13 +119,14 @@ Room INSERT → Flow emite nueva lista → UsageViewModel → StatsScreen (Compo
 
 El DAO expone `getAllLogs(): Flow<List<UsageLog>>`; no hace falta refrescar manualmente al volver a la pestaña Estadísticas.
 
-### Apps bloqueadas (por defecto)
+### Apps bloqueadas (configurables)
 
-| Package | Nombre mostrado |
-|---------|-----------------|
-| `com.instagram.android` | Instagram |
-| `com.facebook.katana` | Facebook |
-| `com.google.android.youtube` | YouTube |
+Tabla Room: `blocked_apps` (`packageName`, `appName`).
+
+- El servicio se suscribe a `getBlockedPackages(): Flow<List<String>>` en `onServiceConnected` y actualiza `dynamicBlockedApps` en memoria (sin consultar la DB en cada evento).
+- La pestaña **Apps** lista apps instaladas (no sistema) vía `PackageManager`; un switch añade o quita entradas.
+- En la primera ejecución se insertan por defecto: Instagram, Facebook y YouTube (`DefaultBlockedApps`).
+- **DB v2** + `fallbackToDestructiveMigration`: al actualizar desde v1, reinstala o deja que Room recree tablas (MVP).
 
 ---
 
@@ -197,15 +204,32 @@ Atomic/
 │       │   ├── java/com/example/atomic/
 │       │   │   ├── MainActivity.kt
 │       │   │   ├── data/
+│       │   │   │   ├── repository/
+│       │   │   │   │   ├── ActivePassRepositoryImpl.kt
+│       │   │   │   │   ├── BlockedAppRepositoryImpl.kt
+│       │   │   │   │   └── UsageRepositoryImpl.kt
+│       │   │   │   ├── ActivePass.kt
+│       │   │   │   ├── ActivePassDao.kt
 │       │   │   │   ├── AtomicDatabase.kt
+│       │   │   │   ├── BlockedApp.kt
+│       │   │   │   ├── BlockedAppDao.kt
+│       │   │   │   ├── DefaultBlockedApps.kt
 │       │   │   │   ├── UsageLog.kt
 │       │   │   │   └── UsageLogDao.kt
+│       │   │   ├── domain/
+│       │   │   │   └── repository/
+│       │   │   │       ├── ActivePassRepository.kt
+│       │   │   │       ├── BlockedAppRepository.kt
+│       │   │   │       └── UsageRepository.kt
 │       │   │   ├── overlay/
 │       │   │   │   └── WindowOverlayManager.kt
 │       │   │   ├── service/
 │       │   │   │   └── AppTrackerService.kt
 │       │   │   ├── ui/
 │       │   │   │   ├── AtomicApp.kt
+│       │   │   │   ├── BlockedAppsScreen.kt
+│       │   │   │   ├── BlockedAppsViewModel.kt
+│       │   │   │   ├── BlockedAppsViewModelFactory.kt
 │       │   │   │   ├── FrictionScreen.kt
 │       │   │   │   ├── PermissionsScreen.kt
 │       │   │   │   ├── PermissionsViewModel.kt
@@ -216,6 +240,7 @@ Atomic/
 │       │   │   │       └── AtomicTheme.kt
 │       │   │   └── util/
 │       │   │       ├── AppDisplayNames.kt
+│       │   │       ├── InstalledApps.kt
 │       │   │       └── PermissionChecker.kt
 │       │   └── res/
 │       │       ├── drawable/
@@ -231,6 +256,8 @@ Atomic/
 │       │           ├── backup_rules.xml
 │       │           └── data_extraction_rules.xml
 │       ├── test/java/com/example/atomic/
+│       │   └── ui/
+│       │       └── UsageViewModelTest.kt
 │       └── androidTest/java/com/example/atomic/
 ├── gradle/
 │   ├── libs.versions.toml
@@ -247,7 +274,8 @@ Atomic/
 
 | Paquete | Contenido |
 |---------|-----------|
-| `data/` | Room: entidades, DAO, base de datos. |
+| `data/` | Room: entidades, DAO, base de datos. Implementaciones de repositorios. |
+| `domain/` | Contratos (interfaces) de repositorios y reglas de negocio. |
 | `service/` | Servicios de sistema (`AppTrackerService`). |
 | `overlay/` | Gestión de ventanas flotantes con Compose. |
 | `ui/` | Pantallas Compose, ViewModels, tema, navegación. |
@@ -265,7 +293,8 @@ Atomic/
 
 2. Abrir **Atomic** → pestaña **Permisos** → activar **Mostrar sobre otras apps** y **Accesibilidad**.
 3. Probar abriendo Instagram / YouTube / Facebook → debe aparecer la pantalla de fricción.
-4. Elegir un motivo → **Abrir (15 min)** → revisar la pestaña **Estadísticas**.
+4. Pestaña **Apps** → activar o desactivar apps bloqueadas.
+5. Elegir un motivo → **Abrir (15 min)** → revisar la pestaña **Estadísticas**.
 
 ### Inspeccionar la base de datos
 
@@ -284,10 +313,10 @@ Android Studio → **App Inspection** → **Database Inspector** → `atomic_dat
 | Persistencia Room + `Flow` reactivo | ✅ Implementado |
 | `MainActivity` + onboarding permisos | ✅ Implementado |
 | `StatsScreen` + `UsageViewModel` | ✅ Implementado |
-| Lista de apps bloqueadas configurable | 🔲 Pendiente |
-| Persistir pases en Room (sobrevivir reinicio) | 🔲 Pendiente |
-| Capa `domain/` + repositorios | 🔲 Pendiente |
-| Tests unitarios / UI | 🔲 Pendiente |
+| Lista de apps bloqueadas configurable | ✅ Implementado |
+| Persistir pases en Room (sobrevivir reinicio) | ✅ Implementado |
+| Capa `domain/` + repositorios | ✅ Implementado |
+| Tests unitarios / UI | ✅ Implementado |
 
 ---
 

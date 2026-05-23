@@ -17,7 +17,13 @@
     <string name="permission_activate">Ir a Ajustes</string>
 
     <string name="nav_permissions">Permisos</string>
+    <string name="nav_blocked_apps">Apps</string>
     <string name="nav_stats">Estadísticas</string>
+
+    <string name="blocked_apps_title">Apps bloqueadas</string>
+    <string name="blocked_apps_subtitle">%1$d apps con fricción activa. Los cambios aplican al instante.</string>
+    <string name="blocked_apps_search">Buscar app</string>
+    <string name="blocked_apps_empty">No se encontraron apps con ese filtro.</string>
 
     <string name="stats_title">Atomic - Mis Patrones</string>
     <string name="stats_empty">Aún no hay registros. ¡El bloqueo está funcionando!</string>
