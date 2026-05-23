@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Atomic</string>
+    <string name="accessibility_service_description">Atomic detecta qué aplicaciones abres para ayudarte a gestionar tus hábitos digitales.</string>
+
+    <string name="permissions_title">Configura Atomic</string>
+    <string name="permissions_subtitle">Para interceptar apps y mostrar la pantalla de fricción, Atomic necesita estos dos permisos del sistema.</string>
+    <string name="permissions_all_granted">Todo listo. Atomic puede monitorizar y mostrar intervenciones.</string>
+    <string name="permissions_footer">Vuelve a esta pantalla después de activar cada permiso. El estado se actualiza automáticamente.</string>
+
+    <string name="permission_overlay_title">Mostrar sobre otras apps</string>
+    <string name="permission_overlay_description">Permite mostrar la pantalla de fricción encima de Instagram, YouTube y otras apps bloqueadas.</string>
+    <string name="permission_accessibility_title">Servicio de accesibilidad</string>
+    <string name="permission_accessibility_description">Permite detectar qué aplicación abres en primer plano. Activa el servicio «Atomic» en la lista.</string>
+
+    <string name="permission_status_granted">Activado</string>
+    <string name="permission_status_pending">Pendiente</string>
+    <string name="permission_activate">Ir a Ajustes</string>
+
+    <string name="nav_permissions">Permisos</string>
+    <string name="nav_stats">Estadísticas</string>
+
+    <string name="stats_title">Atomic - Mis Patrones</string>
+    <string name="stats_empty">Aún no hay registros. ¡El bloqueo está funcionando!</string>
+    <string name="stats_history_title">Historial de Accesos</string>
+    <string name="stats_motives_title">¿Por qué abres las apps?</string>
+    <string name="stats_motive_count">%1$d veces</string>
+    <string name="stats_log_reason">Motivo: %1$s</string>
+</resources>
