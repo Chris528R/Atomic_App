@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,6 +25,7 @@ import com.example.atomic.R
 private enum class MainTab {
     BlockedApps,
     Stats,
+    Insights,
     Schedule,
 }
 
@@ -32,6 +34,7 @@ fun AtomicApp(
     usageViewModel: UsageViewModel,
     blockedAppsViewModel: BlockedAppsViewModel,
     scheduleSettingsViewModel: ScheduleSettingsViewModel,
+    insightsViewModel: InsightsViewModel,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.BlockedApps) }
@@ -54,6 +57,12 @@ fun AtomicApp(
                     label = { Text(stringResource(R.string.nav_stats)) },
                 )
                 NavigationBarItem(
+                    selected = selectedTab == MainTab.Insights,
+                    onClick = { selectedTab = MainTab.Insights },
+                    icon = { Icon(Icons.Filled.Star, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_insights)) },
+                )
+                NavigationBarItem(
                     selected = selectedTab == MainTab.Schedule,
                     onClick = { selectedTab = MainTab.Schedule },
                     icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
@@ -73,6 +82,11 @@ fun AtomicApp(
                 modifier = Modifier.padding(innerPadding),
             )
             
+            MainTab.Insights -> InsightsScreen(
+                viewModel = insightsViewModel,
+                modifier = Modifier.padding(innerPadding),
+            )
+
             MainTab.Schedule -> {
                 val rules by scheduleSettingsViewModel.rules.collectAsState()
                 Box(modifier = Modifier.padding(innerPadding)) {

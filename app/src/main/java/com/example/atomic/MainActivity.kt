@@ -18,6 +18,8 @@ import com.example.atomic.ui.UsageViewModel
 import com.example.atomic.ui.UsageViewModelFactory
 import com.example.atomic.ui.ScheduleSettingsViewModel
 import com.example.atomic.ui.ScheduleSettingsViewModelFactory
+import com.example.atomic.ui.InsightsViewModel
+import com.example.atomic.ui.InsightsViewModelFactory
 import com.example.atomic.data.repository.ScheduleRuleRepositoryImpl
 import com.example.atomic.ui.theme.AtomicTheme
 import com.example.atomic.util.PermissionChecker
@@ -35,6 +37,9 @@ class MainActivity : ComponentActivity() {
     }
     private val scheduleSettingsViewModel: ScheduleSettingsViewModel by viewModels {
         ScheduleSettingsViewModelFactory(ScheduleRuleRepositoryImpl(database.scheduleRuleDao()))
+    }
+    private val insightsViewModel: InsightsViewModel by viewModels {
+        InsightsViewModelFactory(database)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +61,7 @@ class MainActivity : ComponentActivity() {
                         usageViewModel = usageViewModel,
                         blockedAppsViewModel = blockedAppsViewModel,
                         scheduleSettingsViewModel = scheduleSettingsViewModel,
+                        insightsViewModel = insightsViewModel,
                     )
                 }
             }

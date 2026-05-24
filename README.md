@@ -365,9 +365,9 @@ Android Studio → **App Inspection** → **Database Inspector** → `atomic_dat
 
 | Área | Estado |
 |------|--------|
-| Detección de patrones de uso | ⏳ Planeado |
-| Insights automáticos | ⏳ Planeado |
-| Metas y objetivos semanales | ⏳ Planeado |
+| Detección de patrones de uso | ✅ Implementado |
+| Insights automáticos | ✅ Implementado |
+| Metas y objetivos semanales | ✅ Implementado |
 
 ### Fase 4 — Automatización de buenos hábitos
 
