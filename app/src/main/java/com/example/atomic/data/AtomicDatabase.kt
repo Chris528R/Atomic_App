@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [UsageLog::class, BlockedApp::class, ActivePass::class],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class AtomicDatabase : RoomDatabase() {
