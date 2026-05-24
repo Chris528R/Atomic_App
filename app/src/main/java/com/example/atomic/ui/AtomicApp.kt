@@ -15,19 +15,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.res.stringResource
 import com.example.atomic.R
 
 private enum class MainTab {
     BlockedApps,
     Stats,
+    Schedule,
 }
 
 @Composable
 fun AtomicApp(
     usageViewModel: UsageViewModel,
     blockedAppsViewModel: BlockedAppsViewModel,
+    scheduleSettingsViewModel: ScheduleSettingsViewModel,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.BlockedApps) }
@@ -49,6 +53,12 @@ fun AtomicApp(
                     icon = { Icon(Icons.Filled.List, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_stats)) },
                 )
+                NavigationBarItem(
+                    selected = selectedTab == MainTab.Schedule,
+                    onClick = { selectedTab = MainTab.Schedule },
+                    icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_schedule)) },
+                )
             }
         },
     ) { innerPadding ->
@@ -62,6 +72,18 @@ fun AtomicApp(
                 viewModel = usageViewModel,
                 modifier = Modifier.padding(innerPadding),
             )
+            
+            MainTab.Schedule -> {
+                val rules by scheduleSettingsViewModel.rules.collectAsState()
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    ScheduleSettingsScreen(
+                        rules = rules,
+                        onToggleRule = { rule, isEnabled -> scheduleSettingsViewModel.toggleRule(rule, isEnabled) },
+                        onAddNewRule = { rule -> scheduleSettingsViewModel.addRule(rule) },
+                        onDeleteRule = { rule -> scheduleSettingsViewModel.deleteRule(rule) }
+                    )
+                }
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,13 +14,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.atomic.data.ScheduleRule
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleSettingsScreen(
     rules: List<ScheduleRule>,
     onToggleRule: (ScheduleRule, Boolean) -> Unit,
-    onAddNewRule: (ScheduleRule) -> Unit
+    onAddNewRule: (ScheduleRule) -> Unit,
+    onDeleteRule: (ScheduleRule) -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -59,7 +63,11 @@ fun ScheduleSettingsScreen(
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(rules, key = { it.id }) { rule ->
-                        ScheduleRuleCard(rule = rule, onToggle = onToggleRule)
+                        ScheduleRuleCard(
+                            rule = rule, 
+                            onToggle = onToggleRule,
+                            onDelete = { onDeleteRule(rule) }
+                        )
                     }
                 }
             }
@@ -78,7 +86,7 @@ fun ScheduleSettingsScreen(
 }
 
 @Composable
-fun ScheduleRuleCard(rule: ScheduleRule, onToggle: (ScheduleRule, Boolean) -> Unit) {
+fun ScheduleRuleCard(rule: ScheduleRule, onToggle: (ScheduleRule, Boolean) -> Unit, onDelete: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = if (rule.isEnabled) MaterialTheme.colorScheme.surfaceVariant
@@ -112,10 +120,19 @@ fun ScheduleRuleCard(rule: ScheduleRule, onToggle: (ScheduleRule, Boolean) -> Un
                 )
             }
 
-            Switch(
-                checked = rule.isEnabled,
-                onCheckedChange = { isChecked -> onToggle(rule, isChecked) }
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(
+                    checked = rule.isEnabled,
+                    onCheckedChange = { isChecked -> onToggle(rule, isChecked) }
+                )
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
     }
 }
@@ -300,8 +317,11 @@ fun DaySelectorRow(selectedDays: Set<String>, onDayToggled: (String) -> Unit) {
     val labels = listOf("L", "M", "M", "J", "V", "S", "D")
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         days.forEachIndexed { index, day ->
             val isSelected = selectedDays.contains(day)
