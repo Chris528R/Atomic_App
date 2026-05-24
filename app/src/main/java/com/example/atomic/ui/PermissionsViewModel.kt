@@ -11,9 +11,10 @@ import kotlinx.coroutines.flow.update
 data class PermissionsUiState(
     val isOverlayGranted: Boolean = false,
     val isAccessibilityGranted: Boolean = false,
+    val isBatteryOptimized: Boolean = false,
 ) {
     val allGranted: Boolean
-        get() = isOverlayGranted && isAccessibilityGranted
+        get() = isOverlayGranted && isAccessibilityGranted && isBatteryOptimized
 }
 
 class PermissionsViewModel(application: Application) : AndroidViewModel(application) {
@@ -27,6 +28,7 @@ class PermissionsViewModel(application: Application) : AndroidViewModel(applicat
             PermissionsUiState(
                 isOverlayGranted = PermissionChecker.hasOverlayPermission(context),
                 isAccessibilityGranted = PermissionChecker.isAccessibilityServiceEnabled(context),
+                isBatteryOptimized = PermissionChecker.isIgnoringBatteryOptimizations(context),
             )
         }
     }

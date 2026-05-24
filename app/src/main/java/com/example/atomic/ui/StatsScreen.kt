@@ -20,7 +20,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +41,7 @@ fun StatsScreen(
     modifier: Modifier = Modifier,
 ) {
     val logs by viewModel.logs.collectAsStateWithLifecycle()
+    val chartData by viewModel.chartData.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -69,7 +72,38 @@ fun StatsScreen(
                     style = MaterialTheme.typography.bodyLarge,
                 )
             } else {
-                MotivesSummary(logs)
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Uso Total Reciente", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        UsageBarChart(data = chartData)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                val donutColors = listOf(
+                    Color(0xFF6200EE),
+                    Color(0xFF03DAC5),
+                    Color(0xFFFF0266),
+                    Color(0xFFFFDE03),
+                    Color(0xFF000000)
+                )
+                val donutData = remember(logs) { prepareDonutData(logs, donutColors) }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Distribución de Motivos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        MotivesDonutChart(data = donutData)
+                    }
+                }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.stats_history_title),
@@ -86,38 +120,6 @@ fun StatsScreen(
     }
 }
 
-@Composable
-fun MotivesSummary(logs: List<UsageLog>) {
-    val motiveCounts = logs.groupingBy { it.reason }.eachCount()
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.stats_motives_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            motiveCounts.entries.sortedByDescending { it.value }.forEach { (reason, count) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(text = reason)
-                    Text(
-                        text = stringResource(R.string.stats_motive_count, count),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun LogsList(

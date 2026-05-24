@@ -5,9 +5,11 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "usage_logs")
 data class UsageLog(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val packageName: String,
     val reason: String,
     val timestamp: Long,
     val durationMinutes: Int,
+    val closeTimestamp: Long? = null,
+    val realUsageMillis: Long? = null
 )

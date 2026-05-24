@@ -39,17 +39,18 @@ class MainActivity : ComponentActivity() {
             AtomicTheme {
                 val permissionsUiState by permissionsViewModel.uiState.collectAsStateWithLifecycle()
 
-                AtomicApp(
-                    permissionsUiState = permissionsUiState,
-                    usageViewModel = usageViewModel,
-                    blockedAppsViewModel = blockedAppsViewModel,
-                    onOpenOverlaySettings = {
-                        PermissionChecker.openOverlaySettings(this)
-                    },
-                    onOpenAccessibilitySettings = {
-                        PermissionChecker.openAccessibilitySettings(this)
-                    },
-                )
+                if (!permissionsUiState.allGranted) {
+                    com.example.atomic.ui.OnboardingScreen(
+                        uiState = permissionsUiState,
+                        context = this,
+                        onOnboardingComplete = { }
+                    )
+                } else {
+                    AtomicApp(
+                        usageViewModel = usageViewModel,
+                        blockedAppsViewModel = blockedAppsViewModel,
+                    )
+                }
             }
         }
     }

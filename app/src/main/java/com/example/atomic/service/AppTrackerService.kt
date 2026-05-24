@@ -35,6 +35,11 @@ class AppTrackerService : AccessibilityService() {
     @Volatile
     private var dynamicBlockedApps: List<String> = emptyList()
 
+    // Estado de la sesión actual
+    private var currentActiveLogId: Long? = null
+    private var currentActivePackage: String? = null
+    private var currentSessionStartTime: Long = 0L
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         overlayManager = WindowOverlayManager(applicationContext)
@@ -68,6 +73,29 @@ class AppTrackerService : AccessibilityService() {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val packageName = event.packageName?.toString() ?: return
+
+        // 1. Verificar si salimos de la app activa
+        if (currentActivePackage != null && packageName != currentActivePackage) {
+            // Filtramos eventos del sistema que no son cierres reales
+            if (packageName != "com.android.systemui" && !packageName.contains("inputmethod")) {
+                val closeTime = System.currentTimeMillis()
+                val usage = closeTime - currentSessionStartTime
+                val logIdToUpdate = currentActiveLogId
+
+                // Limpiar estado en memoria
+                currentActiveLogId = null
+                currentActivePackage = null
+                currentSessionStartTime = 0L
+
+                // Actualizar Room en segundo plano
+                if (logIdToUpdate != null) {
+                    serviceScope.launch {
+                        usageRepository.updateUsageEnd(logIdToUpdate, closeTime, usage)
+                    }
+                }
+            }
+        }
+
         if (packageName == applicationContext.packageName) return
 
         if (!dynamicBlockedApps.contains(packageName)) return
@@ -76,6 +104,22 @@ class AppTrackerService : AccessibilityService() {
         val expiryTime = unlockedApps[packageName] ?: 0L
 
         if (currentTime < expiryTime) {
+            if (currentActivePackage != packageName) {
+                val startTime = System.currentTimeMillis()
+                serviceScope.launch {
+                    val insertedId = usageRepository.insertLog(
+                        UsageLog(
+                            packageName = packageName,
+                            reason = "Pase activo",
+                            timestamp = startTime,
+                            durationMinutes = 15
+                        )
+                    )
+                    currentActiveLogId = insertedId
+                    currentActivePackage = packageName
+                    currentSessionStartTime = startTime
+                }
+            }
             return
         }
 
@@ -96,7 +140,7 @@ class AppTrackerService : AccessibilityService() {
 
                 serviceScope.launch {
                     activePassRepository.insertPass(com.example.atomic.data.ActivePass(packageName, passExpiry))
-                    usageRepository.insertLog(
+                    val insertedId = usageRepository.insertLog(
                         UsageLog(
                             packageName = packageName,
                             reason = reason,
@@ -104,6 +148,10 @@ class AppTrackerService : AccessibilityService() {
                             durationMinutes = durationMin,
                         ),
                     )
+                    // Seteamos el estado de la sesión activa
+                    currentActiveLogId = insertedId
+                    currentActivePackage = packageName
+                    currentSessionStartTime = unlockTime
                 }
             },
             onCancel = {

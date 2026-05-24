@@ -11,6 +11,8 @@
     <string name="permission_overlay_description">Permite mostrar la pantalla de fricción encima de Instagram, YouTube y otras apps bloqueadas.</string>
     <string name="permission_accessibility_title">Servicio de accesibilidad</string>
     <string name="permission_accessibility_description">Permite detectar qué aplicación abres en primer plano. Activa el servicio «Atomic» en la lista.</string>
+    <string name="permission_battery_title">Batería sin restricciones</string>
+    <string name="permission_battery_description">Evita que Android apague el bloqueador en segundo plano para ahorrar energía.</string>
 
     <string name="permission_status_granted">Activado</string>
     <string name="permission_status_pending">Pendiente</string>

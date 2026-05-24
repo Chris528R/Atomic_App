@@ -48,10 +48,10 @@ Ayudar al usuario a tomar conciencia y control sobre el tiempo que pasa en apps 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                    MainActivity (launcher)                        │
-│  AtomicApp ─ NavigationBar: [ Permisos | Apps | Estadísticas ]   │
-│    · PermissionsScreen + PermissionsViewModel                    │
+│  AtomicApp ─ NavigationBar: [ Apps | Estadísticas ]                │
+│    · OnboardingScreen + PermissionsViewModel                     │
 │    · BlockedAppsScreen + BlockedAppsViewModel ← Flow ← Room      │
-│    · StatsScreen + UsageViewModel ← Flow ← Room                    │
+│    · StatsScreen (UsageBarChart/DonutChart) + UsageViewModel     │
 └────────────────────────────┬─────────────────────────────────────┘
                              │ lectura (Flow)
 ┌────────────────────────────▼─────────────────────────────────────┐
@@ -74,10 +74,10 @@ Ayudar al usuario a tomar conciencia y control sobre el tiempo que pasa en apps 
 | Componente | Ubicación | Responsabilidad |
 |------------|-----------|-----------------|
 | `MainActivity` | `MainActivity.kt` | Punto de entrada; hospeda `AtomicApp` y ambos ViewModels. |
-| `AtomicApp` | `ui/AtomicApp.kt` | Navegación inferior entre Permisos y Estadísticas. |
-| `PermissionsScreen` | `ui/PermissionsScreen.kt` | Onboarding de permisos (overlay + accesibilidad). |
+| `AtomicApp` | `ui/AtomicApp.kt` | Navegación inferior entre Apps y Estadísticas. |
+| `OnboardingScreen` | `ui/OnboardingScreen.kt` | Onboarding guiado de permisos (overlay, accesibilidad, batería). |
 | `PermissionsViewModel` | `ui/PermissionsViewModel.kt` | Estado de permisos; refresco en `onResume`. |
-| `StatsScreen` | `ui/StatsScreen.kt` | Resumen de motivos + historial de accesos. |
+| `StatsScreen` | `ui/StatsScreen.kt` | Resumen visual (UsageBarChart/MotivesDonutChart) e historial. |
 | `UsageViewModel` | `ui/UsageViewModel.kt` | Observa `Flow<List<UsageLog>>` y expone `StateFlow`. |
 | `FrictionScreen` | `ui/FrictionScreen.kt` | UI de fricción (motivo obligatorio + botón Abrir). |
 | `WindowOverlayManager` | `overlay/WindowOverlayManager.kt` | Inyecta Compose en `TYPE_APPLICATION_OVERLAY`. |
@@ -185,7 +185,17 @@ android:accessibilityEventTypes="typeWindowStateChanged"
 
 **Activación:** Ajustes → Apps → Atomic → **Mostrar sobre otras apps**.
 
-> **Privacidad:** Ambos permisos son sensibles. La pestaña **Permisos** de la app explica su uso antes de solicitarlos.
+> **Privacidad:** Estos permisos son sensibles y necesarios para el núcleo de la aplicación. La pestaña **Permisos** de la app explica su uso antes de solicitarlos.
+
+---
+
+### `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Batería sin restricciones)
+
+**Qué es:** Permite pedirle al usuario que excluya la app de las optimizaciones de batería del sistema.
+
+**Por qué lo usa Atomic:** Android suele matar los servicios en segundo plano (`AppTrackerService`) para ahorrar batería. Sin este permiso, el interceptor dejaría de funcionar tras un tiempo inactivo.
+
+**Activación:** Ajustes → Aplicaciones → Atomic → Batería → **Sin restricciones** (o mediante el intent en la pestaña Permisos).
 
 ---
 
@@ -231,9 +241,11 @@ Atomic/
 │       │   │   │   ├── BlockedAppsViewModel.kt
 │       │   │   │   ├── BlockedAppsViewModelFactory.kt
 │       │   │   │   ├── FrictionScreen.kt
-│       │   │   │   ├── PermissionsScreen.kt
+│       │   │   │   ├── MotivesDonutChart.kt
+│       │   │   │   ├── OnboardingScreen.kt
 │       │   │   │   ├── PermissionsViewModel.kt
 │       │   │   │   ├── StatsScreen.kt
+│       │   │   │   ├── UsageBarChart.kt
 │       │   │   │   ├── UsageViewModel.kt
 │       │   │   │   ├── UsageViewModelFactory.kt
 │       │   │   │   └── theme/
@@ -291,7 +303,7 @@ Atomic/
 ./gradlew :app:installDebug
 ```
 
-2. Abrir **Atomic** → pestaña **Permisos** → activar **Mostrar sobre otras apps** y **Accesibilidad**.
+2. Abrir **Atomic** → Completar el **Onboarding guiado** para activar **Mostrar sobre otras apps**, **Accesibilidad** y **Batería sin restricciones**.
 3. Probar abriendo Instagram / YouTube / Facebook → debe aparecer la pantalla de fricción.
 4. Pestaña **Apps** → activar o desactivar apps bloqueadas.
 5. Elegir un motivo → **Abrir (15 min)** → revisar la pestaña **Estadísticas**.
@@ -302,21 +314,73 @@ Android Studio → **App Inspection** → **Database Inspector** → `atomic_dat
 
 ---
 
-## Estado actual y roadmap
+## Estado actual
 
 | Área | Estado |
 |------|--------|
 | Gradle + Compose + Room + Coroutines | ✅ Configurado |
 | `AppTrackerService` + accesibilidad | ✅ Implementado |
 | Overlay + `FrictionScreen` | ✅ Implementado |
-| Pases de 15 min (`unlockedApps`) | ✅ En memoria |
+| Pases de 15 min (`unlockedApps`) | ✅ Implementado |
 | Persistencia Room + `Flow` reactivo | ✅ Implementado |
 | `MainActivity` + onboarding permisos | ✅ Implementado |
 | `StatsScreen` + `UsageViewModel` | ✅ Implementado |
 | Lista de apps bloqueadas configurable | ✅ Implementado |
-| Persistir pases en Room (sobrevivir reinicio) | ✅ Implementado |
+| Persistir pases en Room (sobrevivir reinio) | ✅ Implementado |
 | Capa `domain/` + repositorios | ✅ Implementado |
 | Tests unitarios / UI | ✅ Implementado |
+
+---
+
+## Roadmap
+
+### Fase 1 — Refinar el MVP
+
+| Área | Estado |
+|------|--------|
+| Registrar duración real de uso | ✅ Implementado |
+| Historial y estadísticas visuales | ✅ Implementado |
+| Mejorar onboarding guiado | ✅ Implementado |
+
+### Fase 2 — Reglas inteligentes
+
+| Área | Estado |
+|------|--------|
+| Reglas por motivo (`UnlockRule`) | ⏳ Planeado |
+| Penalización futura (deuda de tiempo) | ⏳ Planeado |
+| Fricción progresiva | ⏳ Planeado |
+
+### Fase 3 — Aprendizaje y patrones
+
+| Área | Estado |
+|------|--------|
+| Detección de patrones de uso | ⏳ Planeado |
+| Insights automáticos | ⏳ Planeado |
+| Metas y objetivos semanales | ⏳ Planeado |
+
+### Fase 4 — Automatización de buenos hábitos
+
+| Área | Estado |
+|------|--------|
+| Recordatorios inteligentes | ⏳ Planeado |
+| Recomendaciones de hábitos | ⏳ Planeado |
+| Sistema de reemplazo de hábitos | ⏳ Planeado |
+
+### Fase 5 — Plataforma
+
+| Área | Estado |
+|------|--------|
+| Sincronización entre dispositivos | ⏳ Planeado |
+| Exportación de datos (CSV / JSON) | ⏳ Planeado |
+| Backup en nube / cuentas | ⏳ Planeado |
+
+### Ideas experimentales
+
+| Área | Estado |
+|------|--------|
+| Modo desafío | 💡 Idea |
+| Modo compañero | 💡 Idea |
+| Reemplazo contextual ("Estoy aburrido" → alternativas) | 💡 Idea |
 
 ---
 

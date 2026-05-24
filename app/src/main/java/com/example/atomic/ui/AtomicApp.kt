@@ -20,32 +20,23 @@ import androidx.compose.ui.res.stringResource
 import com.example.atomic.R
 
 private enum class MainTab {
-    Permissions,
     BlockedApps,
     Stats,
 }
 
 @Composable
 fun AtomicApp(
-    permissionsUiState: PermissionsUiState,
     usageViewModel: UsageViewModel,
     blockedAppsViewModel: BlockedAppsViewModel,
-    onOpenOverlaySettings: () -> Unit,
-    onOpenAccessibilitySettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(MainTab.Permissions) }
+    var selectedTab by rememberSaveable { mutableStateOf(MainTab.BlockedApps) }
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == MainTab.Permissions,
-                    onClick = { selectedTab = MainTab.Permissions },
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    label = { Text(stringResource(R.string.nav_permissions)) },
-                )
+
                 NavigationBarItem(
                     selected = selectedTab == MainTab.BlockedApps,
                     onClick = { selectedTab = MainTab.BlockedApps },
@@ -62,13 +53,6 @@ fun AtomicApp(
         },
     ) { innerPadding ->
         when (selectedTab) {
-            MainTab.Permissions -> PermissionsScreen(
-                uiState = permissionsUiState,
-                onOpenOverlaySettings = onOpenOverlaySettings,
-                onOpenAccessibilitySettings = onOpenAccessibilitySettings,
-                modifier = Modifier.padding(innerPadding),
-            )
-
             MainTab.BlockedApps -> BlockedAppsScreen(
                 viewModel = blockedAppsViewModel,
                 modifier = Modifier.padding(innerPadding),
