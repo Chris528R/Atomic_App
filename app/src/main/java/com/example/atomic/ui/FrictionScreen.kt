@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,13 +37,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.atomic.domain.UnlockReason
+import com.example.atomic.data.PositiveHabit
 
 @Composable
 fun FrictionScreen(
     appName: String,
     openCount: Int,
     currentDebt: Int,
+    suggestedHabit: PositiveHabit?,
     onUnlock: (reason: UnlockReason, isForced: Boolean) -> Unit,
+    onRedirect: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
     var selectedReason by remember { mutableStateOf<UnlockReason?>(null) }
@@ -51,11 +57,14 @@ fun FrictionScreen(
             .background(Color.Black.copy(alpha = 0.9f)),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
+        Column(
             modifier = Modifier.padding(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (openCount >= 6) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                if (openCount >= 6) {
                 var justification by remember { mutableStateOf("") }
                 val wordCount = justification.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
                 val isButtonEnabled = wordCount >= 5
@@ -189,6 +198,46 @@ fun FrictionScreen(
                         ) {
                             val timeText = selectedReason?.allowedMinutes?.let { " ($it min)" } ?: ""
                             Text("Abrir$timeText")
+                        }
+                    }
+                }
+            }
+            }
+            
+            if (suggestedHabit != null) {
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onRedirect(suggestedHabit.targetPackageName) },
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "💡", 
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "Alternativa sugerida",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = "¿Qué tal si mejor avanzas en ${suggestedHabit.name}?",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
                     }
                 }

@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -26,6 +27,7 @@ private enum class MainTab {
     BlockedApps,
     Stats,
     Insights,
+    Replacements,
     Schedule,
 }
 
@@ -35,6 +37,7 @@ fun AtomicApp(
     blockedAppsViewModel: BlockedAppsViewModel,
     scheduleSettingsViewModel: ScheduleSettingsViewModel,
     insightsViewModel: InsightsViewModel,
+    habitReplacementViewModel: HabitReplacementViewModel,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.BlockedApps) }
@@ -63,6 +66,12 @@ fun AtomicApp(
                     label = { Text(stringResource(R.string.nav_insights)) },
                 )
                 NavigationBarItem(
+                    selected = selectedTab == MainTab.Replacements,
+                    onClick = { selectedTab = MainTab.Replacements },
+                    icon = { Icon(Icons.Filled.Build, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_replacements)) },
+                )
+                NavigationBarItem(
                     selected = selectedTab == MainTab.Schedule,
                     onClick = { selectedTab = MainTab.Schedule },
                     icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
@@ -86,6 +95,18 @@ fun AtomicApp(
                 viewModel = insightsViewModel,
                 modifier = Modifier.padding(innerPadding),
             )
+            
+            MainTab.Replacements -> {
+                val uiState by blockedAppsViewModel.uiState.collectAsState()
+                val installedApps = uiState.installedApps
+                val blockedApps = installedApps.filter { it.isBlocked }.map { it.packageName }
+                HabitReplacementScreen(
+                    viewModel = habitReplacementViewModel,
+                    blockedApps = blockedApps,
+                    installedApps = installedApps,
+                    modifier = Modifier.padding(innerPadding),
+                )
+            }
 
             MainTab.Schedule -> {
                 val rules by scheduleSettingsViewModel.rules.collectAsState()

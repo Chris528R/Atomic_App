@@ -17,6 +17,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.atomic.ui.FrictionScreen
 import com.example.atomic.ui.theme.AtomicTheme
+import com.example.atomic.data.PositiveHabit
 
 class WindowOverlayManager(private val context: Context) {
 
@@ -28,7 +29,9 @@ class WindowOverlayManager(private val context: Context) {
         appName: String,
         openCount: Int,
         currentDebt: Int,
+        suggestedHabit: PositiveHabit?,
         onUnlock: (com.example.atomic.domain.UnlockReason, Boolean) -> Unit,
+        onRedirect: (String) -> Unit,
         onCancel: () -> Unit,
     ) {
         if (composeView != null) return
@@ -49,9 +52,14 @@ class WindowOverlayManager(private val context: Context) {
                         appName = appName,
                         openCount = openCount,
                         currentDebt = currentDebt,
+                        suggestedHabit = suggestedHabit,
                         onUnlock = { reason, isForced ->
                             removeOverlay()
                             onUnlock(reason, isForced)
+                        },
+                        onRedirect = { targetPackage ->
+                            removeOverlay()
+                            onRedirect(targetPackage)
                         },
                         onCancel = {
                             removeOverlay()

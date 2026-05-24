@@ -25,6 +25,8 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import com.example.atomic.domain.TimeRuleEngine
 import com.example.atomic.domain.UnlockReason
+import com.example.atomic.data.myGoodHabits
+import com.example.atomic.util.AppLauncher
 
 class AppTrackerService : AccessibilityService() {
 
@@ -51,6 +53,9 @@ class AppTrackerService : AccessibilityService() {
     private var currentActiveLogId: Long? = null
     private var currentActivePackage: String? = null
     private var currentSessionStartTime: Long = 0L
+
+    val positiveApps = listOf("com.sololearn", "com.getmimo")
+    private var lastLoggedPositiveApp: String? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -116,6 +121,24 @@ class AppTrackerService : AccessibilityService() {
         }
 
         if (packageName == applicationContext.packageName) return
+        
+        if (positiveApps.contains(packageName)) {
+            if (packageName != lastLoggedPositiveApp) {
+                lastLoggedPositiveApp = packageName
+                
+                serviceScope.launch {
+                    usageRepository.insertLog(
+                        UsageLog(
+                            packageName = packageName,
+                            reason = "Hábito Positivo",
+                            timestamp = System.currentTimeMillis(),
+                            durationMinutes = 0
+                        )
+                    )
+                }
+            }
+            return
+        }
 
         if (!dynamicBlockedApps.contains(packageName)) return
 
@@ -184,11 +207,21 @@ class AppTrackerService : AccessibilityService() {
             database.timeDebtDao().initDebt()
             val debt = database.timeDebtDao().getDebt() ?: 0
 
+            val dynamicReplacement = database.habitReplacementDao().getReplacementForApp(packageName)
+            val suggestedHabit = dynamicReplacement?.let {
+                com.example.atomic.data.PositiveHabit(
+                    id = it.blockedPackageName,
+                    name = it.replacementAppName,
+                    targetPackageName = it.replacementPackageName
+                )
+            }
+
             withContext(Dispatchers.Main) {
                 overlayManager.showFrictionScreen(
                     appName = resolveAppDisplayName(packageName),
                     openCount = openCount,
                     currentDebt = debt,
+                    suggestedHabit = suggestedHabit,
                     onUnlock = { reasonEnum, isForced ->
                         serviceScope.launch {
                             var finalDurationMin = reasonEnum.allowedMinutes
@@ -221,6 +254,9 @@ class AppTrackerService : AccessibilityService() {
                             currentActivePackage = packageName
                             currentSessionStartTime = unlockTime
                         }
+                    },
+                    onRedirect = { targetPackage ->
+                        AppLauncher.launchApp(this@AppTrackerService, targetPackage)
                     },
                     onCancel = {
                         val homeIntent = Intent(Intent.ACTION_MAIN).apply {
