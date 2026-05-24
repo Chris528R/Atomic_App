@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,21 +33,17 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.atomic.domain.UnlockReason
 
 @Composable
 fun FrictionScreen(
     appName: String,
-    onUnlock: (reason: String) -> Unit,
+    openCount: Int,
+    currentDebt: Int,
+    onUnlock: (reason: UnlockReason, isForced: Boolean) -> Unit,
     onCancel: () -> Unit,
 ) {
-    val reasons = listOf(
-        "Trabajo",
-        "Mensaje importante",
-        "Entretenimiento",
-        "Estoy aburrido",
-        "Otro",
-    )
-    var selectedReason by remember { mutableStateOf<String?>(null) }
+    var selectedReason by remember { mutableStateOf<UnlockReason?>(null) }
 
     Box(
         modifier = Modifier
@@ -57,60 +55,141 @@ fun FrictionScreen(
             modifier = Modifier.padding(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "¿Realmente necesitas abrir $appName?",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+            if (openCount >= 6) {
+                var justification by remember { mutableStateOf("") }
+                val wordCount = justification.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+                val isButtonEnabled = wordCount >= 5
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (currentDebt > 0) {
+                        Text(
+                            text = "⚠️ Tienes una deuda de $currentDebt min que se cobrará en este acceso.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                    }
+                    Text(
+                        text = "Apertura #$openCount hoy",
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Has excedido el límite razonable para $appName. Para continuar, escribe una justificación de al menos 5 palabras.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
 
-                Column(modifier = Modifier.selectableGroup()) {
-                    reasons.forEach { text ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .selectable(
-                                    selected = text == selectedReason,
-                                    onClick = { selectedReason = text },
-                                    role = Role.RadioButton,
-                                )
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = justification,
+                        onValueChange = { justification = it },
+                        label = { Text("¿Por qué es indispensable?") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                    )
+
+                    Text(
+                        text = "$wordCount / 5 palabras",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isButtonEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.End).padding(top = 4.dp),
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        TextButton(onClick = onCancel) {
+                            Text("Mejor no")
+                        }
+                        Button(
+                            onClick = { onUnlock(UnlockReason.OTHER, true) },
+                            enabled = isButtonEnabled,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         ) {
-                            RadioButton(
-                                selected = text == selectedReason,
-                                onClick = null,
-                            )
-                            Text(
-                                text = text,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 16.dp),
-                            )
+                            Text("Forzar (+15 min de multa mañana)")
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+            } else {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    TextButton(onClick = onCancel) {
-                        Text("Cancelar")
+                    if (currentDebt > 0) {
+                        Text(
+                            text = "⚠️ Tienes una deuda de $currentDebt min que se cobrará en este acceso.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
                     }
-                    Button(
-                        onClick = { selectedReason?.let { onUnlock(it) } },
-                        enabled = selectedReason != null,
+                    Text(
+                        text = "¿Realmente necesitas abrir $appName?",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Column(modifier = Modifier.selectableGroup()) {
+                        UnlockReason.entries.forEach { reasonEnum ->
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .selectable(
+                                        selected = reasonEnum == selectedReason,
+                                        onClick = { selectedReason = reasonEnum },
+                                        role = Role.RadioButton,
+                                    )
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(
+                                    selected = reasonEnum == selectedReason,
+                                    onClick = null,
+                                )
+                                Column(modifier = Modifier.padding(start = 16.dp)) {
+                                    Text(
+                                        text = reasonEnum.title,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    Text(
+                                        text = "${reasonEnum.allowedMinutes} minutos",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("Abrir (15 min)")
+                        TextButton(onClick = onCancel) {
+                            Text("Cancelar")
+                        }
+                        Button(
+                            onClick = { selectedReason?.let { onUnlock(it, false) } },
+                            enabled = selectedReason != null,
+                        ) {
+                            val timeText = selectedReason?.allowedMinutes?.let { " ($it min)" } ?: ""
+                            Text("Abrir$timeText")
+                        }
                     }
                 }
             }

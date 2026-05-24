@@ -10,6 +10,7 @@ import com.example.atomic.data.repository.BlockedAppRepositoryImpl
 import com.example.atomic.data.repository.UsageRepositoryImpl
 import com.example.atomic.domain.repository.ActivePassRepository
 import com.example.atomic.domain.repository.BlockedAppRepository
+import com.example.atomic.domain.repository.ScheduleRuleRepository
 import com.example.atomic.domain.repository.UsageRepository
 import com.example.atomic.overlay.WindowOverlayManager
 import com.example.atomic.util.resolveAppDisplayName
@@ -18,6 +19,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import com.example.atomic.domain.TimeRuleEngine
+import com.example.atomic.domain.UnlockReason
 
 class AppTrackerService : AccessibilityService() {
 
@@ -25,6 +32,8 @@ class AppTrackerService : AccessibilityService() {
     private lateinit var blockedAppRepository: BlockedAppRepository
     private lateinit var activePassRepository: ActivePassRepository
     private lateinit var usageRepository: UsageRepository
+    private lateinit var scheduleRuleRepository: ScheduleRuleRepository
+    private lateinit var database: AtomicDatabase
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
@@ -35,6 +44,9 @@ class AppTrackerService : AccessibilityService() {
     @Volatile
     private var dynamicBlockedApps: List<String> = emptyList()
 
+    @Volatile
+    private var dynamicScheduleRules: List<com.example.atomic.data.ScheduleRule> = emptyList()
+
     // Estado de la sesión actual
     private var currentActiveLogId: Long? = null
     private var currentActivePackage: String? = null
@@ -43,14 +55,21 @@ class AppTrackerService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         overlayManager = WindowOverlayManager(applicationContext)
-        val database = AtomicDatabase.getDatabase(applicationContext)
+        database = AtomicDatabase.getDatabase(applicationContext)
         blockedAppRepository = BlockedAppRepositoryImpl(database.blockedAppDao())
         activePassRepository = ActivePassRepositoryImpl(database.activePassDao())
         usageRepository = UsageRepositoryImpl(database.usageLogDao())
+        scheduleRuleRepository = com.example.atomic.data.repository.ScheduleRuleRepositoryImpl(database.scheduleRuleDao())
 
         serviceScope.launch {
             blockedAppRepository.getBlockedPackages().collect { packages ->
                 dynamicBlockedApps = packages
+            }
+        }
+
+        serviceScope.launch {
+            scheduleRuleRepository.getAllRules().collect { rules ->
+                dynamicScheduleRules = rules
             }
         }
 
@@ -130,38 +149,89 @@ class AppTrackerService : AccessibilityService() {
             }
         }
 
-        overlayManager.showFrictionScreen(
-            appName = resolveAppDisplayName(packageName),
-            onUnlock = { reason ->
-                val durationMin = 15
-                val unlockTime = System.currentTimeMillis()
-                val passExpiry = unlockTime + durationMin * 60 * 1000L
-                unlockedApps[packageName] = passExpiry
-
-                serviceScope.launch {
-                    activePassRepository.insertPass(com.example.atomic.data.ActivePass(packageName, passExpiry))
-                    val insertedId = usageRepository.insertLog(
-                        UsageLog(
-                            packageName = packageName,
-                            reason = reason,
-                            timestamp = unlockTime,
-                            durationMinutes = durationMin,
-                        ),
+        // 2. EVALUAR HORARIOS LIBRES
+        if (TimeRuleEngine.isFreeTime(dynamicScheduleRules, LocalDateTime.now())) {
+            val freeTimeDurationMin = UnlockReason.FREE_TIME.allowedMinutes
+            val startTime = System.currentTimeMillis()
+            
+            // Conceder el pase silenciosamente
+            unlockedApps[packageName] = startTime + (freeTimeDurationMin * 60 * 1000L)
+            
+            // Registrar en Room para no perder las estadísticas, pero sin lanzar la UI
+            serviceScope.launch {
+                activePassRepository.insertPass(com.example.atomic.data.ActivePass(packageName, unlockedApps[packageName]!!))
+                val insertedId = usageRepository.insertLog(
+                    UsageLog(
+                        packageName = packageName,
+                        reason = UnlockReason.FREE_TIME.title,
+                        timestamp = startTime,
+                        durationMinutes = freeTimeDurationMin
                     )
-                    // Seteamos el estado de la sesión activa
-                    currentActiveLogId = insertedId
-                    currentActivePackage = packageName
-                    currentSessionStartTime = unlockTime
-                }
-            },
-            onCancel = {
-                val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_HOME)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                startActivity(homeIntent)
-            },
-        )
+                )
+                // Actualizar estado para medir uso real (Fase 1)
+                currentActiveLogId = insertedId
+                currentActivePackage = packageName
+                currentSessionStartTime = startTime
+            }
+            return // Salimos del evento; la app se abre sin interrupciones
+        }
+
+        // 3. SI NO ES HORARIO LIBRE, MOSTRAR FRICCIÓN PROGRESIVA
+        serviceScope.launch {
+            val startOfDayMillis = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val openCount = usageRepository.getTodayOpenCount(packageName, startOfDayMillis)
+
+            database.timeDebtDao().initDebt()
+            val debt = database.timeDebtDao().getDebt() ?: 0
+
+            withContext(Dispatchers.Main) {
+                overlayManager.showFrictionScreen(
+                    appName = resolveAppDisplayName(packageName),
+                    openCount = openCount,
+                    currentDebt = debt,
+                    onUnlock = { reasonEnum, isForced ->
+                        serviceScope.launch {
+                            var finalDurationMin = reasonEnum.allowedMinutes
+
+                            if (isForced) {
+                                finalDurationMin = 2
+                                database.timeDebtDao().addDebt(15)
+                            } else {
+                                if (debt > 0) {
+                                    val penaltyToApply = kotlin.math.min(debt, finalDurationMin - 1)
+                                    finalDurationMin -= penaltyToApply
+                                    database.timeDebtDao().reduceDebt(penaltyToApply)
+                                }
+                            }
+
+                            val unlockTime = System.currentTimeMillis()
+                            val passExpiry = unlockTime + finalDurationMin * 60 * 1000L
+                            unlockedApps[packageName] = passExpiry
+
+                            activePassRepository.insertPass(com.example.atomic.data.ActivePass(packageName, passExpiry))
+                            val insertedId = usageRepository.insertLog(
+                                UsageLog(
+                                    packageName = packageName,
+                                    reason = reasonEnum.title,
+                                    timestamp = unlockTime,
+                                    durationMinutes = finalDurationMin,
+                                ),
+                            )
+                            currentActiveLogId = insertedId
+                            currentActivePackage = packageName
+                            currentSessionStartTime = unlockTime
+                        }
+                    },
+                    onCancel = {
+                        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                            addCategory(Intent.CATEGORY_HOME)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(homeIntent)
+                    },
+                )
+            }
+        }
     }
 
     override fun onInterrupt() {

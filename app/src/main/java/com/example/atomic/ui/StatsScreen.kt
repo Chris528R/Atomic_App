@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,104 +61,112 @@ fun StatsScreen(
             )
         },
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp),
         ) {
             if (logs.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.stats_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+                item {
+                    Text(
+                        text = stringResource(R.string.stats_empty),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
             } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Uso Total Reciente", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        UsageBarChart(data = chartData)
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Uso Total Reciente", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            UsageBarChart(data = chartData)
+                        }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                val donutColors = listOf(
-                    Color(0xFF6200EE),
-                    Color(0xFF03DAC5),
-                    Color(0xFFFF0266),
-                    Color(0xFFFFDE03),
-                    Color(0xFF000000)
-                )
-                val donutData = remember(logs) { prepareDonutData(logs, donutColors) }
+                
+                item {
+                    val donutColors = listOf(
+                        Color(0xFF6200EE),
+                        Color(0xFF03DAC5),
+                        Color(0xFFFF0266),
+                        Color(0xFFFFDE03),
+                        Color(0xFF000000)
+                    )
+                    val donutData = prepareDonutData(logs, donutColors)
 
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Distribución de Motivos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
-                        MotivesDonutChart(data = donutData)
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Distribución de Motivos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            MotivesDonutChart(data = donutData)
+                        }
                     }
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = stringResource(R.string.stats_history_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LogsList(
-                    logs = logs,
-                    modifier = Modifier.weight(1f),
-                )
+
+                item {
+                    Text(
+                        text = stringResource(R.string.stats_history_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                
+                logsListItems(logs)
+                
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
 }
 
 
-@Composable
-fun LogsList(
-    logs: List<UsageLog>,
-    modifier: Modifier = Modifier,
-) {
+fun LazyListScope.logsListItems(logs: List<UsageLog>) {
     val dateFormat = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
 
-    LazyColumn(modifier = modifier) {
-        items(logs, key = { it.id }) { log ->
-            Card(
+    items(logs, key = { it.id }) { log ->
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        ) {
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Row(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column {
-                        Text(
-                            text = resolveAppDisplayName(log.packageName),
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = stringResource(R.string.stats_log_reason, log.reason),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
+                Column {
                     Text(
-                        text = dateFormat.format(Date(log.timestamp)),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        text = resolveAppDisplayName(log.packageName),
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(R.string.stats_log_reason, log.reason),
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
+                Text(
+                    text = dateFormat.format(Date(log.timestamp)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
             }
         }
     }

@@ -217,6 +217,7 @@ Atomic/
 │       │   │   │   ├── repository/
 │       │   │   │   │   ├── ActivePassRepositoryImpl.kt
 │       │   │   │   │   ├── BlockedAppRepositoryImpl.kt
+│       │   │   │   │   ├── ScheduleRuleRepositoryImpl.kt
 │       │   │   │   │   └── UsageRepositoryImpl.kt
 │       │   │   │   ├── ActivePass.kt
 │       │   │   │   ├── ActivePassDao.kt
@@ -224,13 +225,20 @@ Atomic/
 │       │   │   │   ├── BlockedApp.kt
 │       │   │   │   ├── BlockedAppDao.kt
 │       │   │   │   ├── DefaultBlockedApps.kt
+│       │   │   │   ├── ScheduleRule.kt
+│       │   │   │   ├── ScheduleRuleDao.kt
+│       │   │   │   ├── TimeDebt.kt
+│       │   │   │   ├── TimeDebtDao.kt
 │       │   │   │   ├── UsageLog.kt
 │       │   │   │   └── UsageLogDao.kt
 │       │   │   ├── domain/
-│       │   │   │   └── repository/
-│       │   │   │       ├── ActivePassRepository.kt
-│       │   │   │       ├── BlockedAppRepository.kt
-│       │   │   │       └── UsageRepository.kt
+│       │   │   │   ├── repository/
+│       │   │   │   │   ├── ActivePassRepository.kt
+│       │   │   │   │   ├── BlockedAppRepository.kt
+│       │   │   │   │   ├── ScheduleRuleRepository.kt
+│       │   │   │   │   └── UsageRepository.kt
+│       │   │   │   ├── TimeRuleEngine.kt
+│       │   │   │   └── UnlockReason.kt
 │       │   │   ├── overlay/
 │       │   │   │   └── WindowOverlayManager.kt
 │       │   │   ├── service/
@@ -244,6 +252,8 @@ Atomic/
 │       │   │   │   ├── MotivesDonutChart.kt
 │       │   │   │   ├── OnboardingScreen.kt
 │       │   │   │   ├── PermissionsViewModel.kt
+│       │   │   │   ├── ScheduleSettingsScreen.kt
+│       │   │   │   ├── ScheduleSettingsViewModel.kt
 │       │   │   │   ├── StatsScreen.kt
 │       │   │   │   ├── UsageBarChart.kt
 │       │   │   │   ├── UsageViewModel.kt
@@ -346,9 +356,10 @@ Android Studio → **App Inspection** → **Database Inspector** → `atomic_dat
 
 | Área | Estado |
 |------|--------|
-| Reglas por motivo (`UnlockRule`) | ⏳ Planeado |
-| Penalización futura (deuda de tiempo) | ⏳ Planeado |
-| Fricción progresiva | ⏳ Planeado |
+| Reglas por motivo (`UnlockReason`) | ✅ Implementado |
+| Penalización futura (deuda de tiempo) | ✅ Implementado |
+| Fricción progresiva | ✅ Implementado |
+| Horarios libres (Reglas de tiempo) | ✅ Implementado |
 
 ### Fase 3 — Aprendizaje y patrones
 

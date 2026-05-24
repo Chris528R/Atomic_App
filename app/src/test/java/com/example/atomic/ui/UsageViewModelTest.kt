@@ -73,5 +73,9 @@ class UsageViewModelTest {
                 _logsFlow.value = logs
             }
         }
+
+        override suspend fun getTodayOpenCount(pkg: String, startOfDay: Long): Int {
+            return _logsFlow.value.count { it.packageName == pkg && it.timestamp >= startOfDay }
+        }
     }
 }

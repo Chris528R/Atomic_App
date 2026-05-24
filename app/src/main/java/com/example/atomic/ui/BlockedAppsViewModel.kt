@@ -81,6 +81,8 @@ class BlockedAppsViewModel(
     private suspend fun refreshInstalledApps(blockedPackages: List<String>) {
         val apps = withContext(Dispatchers.Default) {
             getInstalledApps(getApplication(), blockedPackages)
+                .sortedWith(compareByDescending<InstalledAppInfo> { it.isBlocked }
+                    .thenBy { it.appName.lowercase() })
         }
         _uiState.update {
             it.copy(

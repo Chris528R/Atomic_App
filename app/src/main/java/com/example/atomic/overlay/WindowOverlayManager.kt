@@ -26,7 +26,9 @@ class WindowOverlayManager(private val context: Context) {
 
     fun showFrictionScreen(
         appName: String,
-        onUnlock: (String) -> Unit,
+        openCount: Int,
+        currentDebt: Int,
+        onUnlock: (com.example.atomic.domain.UnlockReason, Boolean) -> Unit,
         onCancel: () -> Unit,
     ) {
         if (composeView != null) return
@@ -45,9 +47,11 @@ class WindowOverlayManager(private val context: Context) {
                 AtomicTheme {
                     FrictionScreen(
                         appName = appName,
-                        onUnlock = { reason ->
+                        openCount = openCount,
+                        currentDebt = currentDebt,
+                        onUnlock = { reason, isForced ->
                             removeOverlay()
-                            onUnlock(reason)
+                            onUnlock(reason, isForced)
                         },
                         onCancel = {
                             removeOverlay()

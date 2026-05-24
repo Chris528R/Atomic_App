@@ -19,4 +19,8 @@ class UsageRepositoryImpl(
     override suspend fun updateUsageEnd(logId: Long, closeTime: Long, usage: Long) {
         dao.updateUsageEnd(logId, closeTime, usage)
     }
+
+    override suspend fun getTodayOpenCount(pkg: String, startOfDay: Long): Int {
+        return dao.getTodayOpenCount(pkg, startOfDay)
+    }
 }

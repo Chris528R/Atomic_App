@@ -15,4 +15,7 @@ interface UsageLogDao {
 
     @Query("SELECT * FROM usage_logs ORDER BY timestamp DESC")
     fun getAllLogs(): Flow<List<UsageLog>>
+
+    @Query("SELECT COUNT(*) FROM usage_logs WHERE packageName = :pkg AND timestamp >= :startOfDay")
+    suspend fun getTodayOpenCount(pkg: String, startOfDay: Long): Int
 }

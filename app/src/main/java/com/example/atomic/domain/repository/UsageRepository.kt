@@ -7,4 +7,5 @@ interface UsageRepository {
     fun getAllLogs(): Flow<List<UsageLog>>
     suspend fun insertLog(log: UsageLog): Long
     suspend fun updateUsageEnd(logId: Long, closeTime: Long, usage: Long)
+    suspend fun getTodayOpenCount(pkg: String, startOfDay: Long): Int
 }
