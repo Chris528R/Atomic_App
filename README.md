@@ -225,6 +225,9 @@ Atomic/
 │       │   │   │   ├── BlockedApp.kt
 │       │   │   │   ├── BlockedAppDao.kt
 │       │   │   │   ├── DefaultBlockedApps.kt
+│       │   │   │   ├── HabitReplacement.kt
+│       │   │   │   ├── HabitReplacementDao.kt
+│       │   │   │   ├── PositiveHabit.kt
 │       │   │   │   ├── ScheduleRule.kt
 │       │   │   │   ├── ScheduleRuleDao.kt
 │       │   │   │   ├── TimeDebt.kt
@@ -242,13 +245,17 @@ Atomic/
 │       │   │   ├── overlay/
 │       │   │   │   └── WindowOverlayManager.kt
 │       │   │   ├── service/
-│       │   │   │   └── AppTrackerService.kt
+│       │   │   │   ├── AppTrackerService.kt
+│       │   │   │   └── HabitReminderWorker.kt
 │       │   │   ├── ui/
 │       │   │   │   ├── AtomicApp.kt
 │       │   │   │   ├── BlockedAppsScreen.kt
 │       │   │   │   ├── BlockedAppsViewModel.kt
 │       │   │   │   ├── BlockedAppsViewModelFactory.kt
 │       │   │   │   ├── FrictionScreen.kt
+│       │   │   │   ├── HabitReplacementScreen.kt
+│       │   │   │   ├── HabitReplacementViewModel.kt
+│       │   │   │   ├── HabitReplacementViewModelFactory.kt
 │       │   │   │   ├── MotivesDonutChart.kt
 │       │   │   │   ├── OnboardingScreen.kt
 │       │   │   │   ├── PermissionsViewModel.kt
@@ -262,7 +269,9 @@ Atomic/
 │       │   │   │       └── AtomicTheme.kt
 │       │   │   └── util/
 │       │   │       ├── AppDisplayNames.kt
+│       │   │       ├── AppLauncher.kt
 │       │   │       ├── InstalledApps.kt
+│       │   │       ├── NotificationHelper.kt
 │       │   │       └── PermissionChecker.kt
 │       │   └── res/
 │       │       ├── drawable/
@@ -373,9 +382,9 @@ Android Studio → **App Inspection** → **Database Inspector** → `atomic_dat
 
 | Área | Estado |
 |------|--------|
-| Recordatorios inteligentes | ⏳ Planeado |
-| Recomendaciones de hábitos | ⏳ Planeado |
-| Sistema de reemplazo de hábitos | ⏳ Planeado |
+| Recordatorios inteligentes | ✅ Implementado |
+| Recomendaciones de hábitos | ✅ Implementado |
+| Sistema de reemplazo de hábitos | ✅ Implementado |
 
 ### Fase 5 — Plataforma
 
