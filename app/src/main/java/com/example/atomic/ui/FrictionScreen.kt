@@ -19,6 +19,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -178,6 +180,52 @@ fun FrictionScreen(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.outline
                                     )
+                                }
+                            }
+                        }
+                    }
+
+                    if (currentDebt > 0 && selectedReason != null) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        val requested = selectedReason!!.allowedMinutes
+                        val penalty = kotlin.math.min(currentDebt, requested - 1)
+                        val finalTime = requested - penalty
+
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    "⚖️ Ajuste por Deuda",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                                Divider(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Tiempo solicitado:", style = MaterialTheme.typography.bodySmall)
+                                    Text("$requested min", style = MaterialTheme.typography.bodySmall)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Cobro de deuda:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                                    Text("-$penalty min", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Tiempo real:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text("$finalTime min", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

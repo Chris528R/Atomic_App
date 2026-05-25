@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -28,6 +29,7 @@ private enum class MainTab {
     Stats,
     Insights,
     Replacements,
+    Reminders,
     Schedule,
 }
 
@@ -38,6 +40,7 @@ fun AtomicApp(
     scheduleSettingsViewModel: ScheduleSettingsViewModel,
     insightsViewModel: InsightsViewModel,
     habitReplacementViewModel: HabitReplacementViewModel,
+    habitManagerViewModel: HabitManagerViewModel,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.BlockedApps) }
@@ -70,6 +73,12 @@ fun AtomicApp(
                     onClick = { selectedTab = MainTab.Replacements },
                     icon = { Icon(Icons.Filled.Build, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_replacements)) },
+                )
+                NavigationBarItem(
+                    selected = selectedTab == MainTab.Reminders,
+                    onClick = { selectedTab = MainTab.Reminders },
+                    icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
+                    label = { Text("Recordatorios") },
                 )
                 NavigationBarItem(
                     selected = selectedTab == MainTab.Schedule,
@@ -105,6 +114,13 @@ fun AtomicApp(
                     blockedApps = blockedApps,
                     installedApps = installedApps,
                     modifier = Modifier.padding(innerPadding),
+                )
+            }
+
+            MainTab.Reminders -> {
+                HabitManagerScreen(
+                    viewModel = habitManagerViewModel,
+                    modifier = Modifier.padding(innerPadding)
                 )
             }
 

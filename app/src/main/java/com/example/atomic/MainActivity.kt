@@ -22,6 +22,9 @@ import com.example.atomic.ui.InsightsViewModel
 import com.example.atomic.ui.InsightsViewModelFactory
 import com.example.atomic.ui.HabitReplacementViewModel
 import com.example.atomic.ui.HabitReplacementViewModelFactory
+import com.example.atomic.ui.HabitManagerViewModel
+import com.example.atomic.ui.HabitManagerViewModelFactory
+import com.example.atomic.data.repository.ProactiveHabitRepositoryImpl
 import com.example.atomic.data.repository.ScheduleRuleRepositoryImpl
 import com.example.atomic.ui.theme.AtomicTheme
 import com.example.atomic.util.PermissionChecker
@@ -38,7 +41,7 @@ class MainActivity : ComponentActivity() {
 
     private val permissionsViewModel: PermissionsViewModel by viewModels()
     private val usageViewModel: UsageViewModel by viewModels {
-        UsageViewModelFactory(UsageRepositoryImpl(database.usageLogDao()))
+        UsageViewModelFactory(UsageRepositoryImpl(database.usageLogDao()), database.timeDebtDao())
     }
     private val blockedAppsViewModel: BlockedAppsViewModel by viewModels {
         BlockedAppsViewModelFactory(BlockedAppRepositoryImpl(database.blockedAppDao()), application)
@@ -51,6 +54,9 @@ class MainActivity : ComponentActivity() {
     }
     private val habitReplacementViewModel: HabitReplacementViewModel by viewModels {
         HabitReplacementViewModelFactory(database)
+    }
+    private val habitManagerViewModel: HabitManagerViewModel by viewModels {
+        HabitManagerViewModelFactory(ProactiveHabitRepositoryImpl(database.proactiveHabitDao()), applicationContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +81,7 @@ class MainActivity : ComponentActivity() {
                         scheduleSettingsViewModel = scheduleSettingsViewModel,
                         insightsViewModel = insightsViewModel,
                         habitReplacementViewModel = habitReplacementViewModel,
+                        habitManagerViewModel = habitManagerViewModel,
                     )
                 }
             }
@@ -87,25 +94,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun scheduleHabitReminder() {
-        val currentDate = Calendar.getInstance()
-        val dueDate = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 20)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-        }
-
-        if (dueDate.before(currentDate)) {
-            dueDate.add(Calendar.HOUR_OF_DAY, 24)
-        }
-
-        val initialDelay = dueDate.timeInMillis - currentDate.timeInMillis
-
-        val reminderWorkRequest = PeriodicWorkRequestBuilder<HabitReminderWorker>(24, TimeUnit.HOURS)
-            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+        // Ejecutamos cada hora para revisar los hábitos programados
+        val reminderWorkRequest = PeriodicWorkRequestBuilder<HabitReminderWorker>(1, TimeUnit.HOURS)
             .build()
 
         WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
-            "ProgramingHabitReminder",
+            "DynamicHabitReminder",
             ExistingPeriodicWorkPolicy.KEEP,
             reminderWorkRequest
         )

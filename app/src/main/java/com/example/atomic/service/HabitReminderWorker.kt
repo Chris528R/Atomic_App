@@ -7,6 +7,7 @@ import com.example.atomic.data.AtomicDatabase
 import com.example.atomic.util.NotificationHelper
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Calendar
 
 class HabitReminderWorker(
     appContext: Context,
@@ -15,19 +16,35 @@ class HabitReminderWorker(
 
     override suspend fun doWork(): Result {
         val database = AtomicDatabase.getDatabase(applicationContext)
+        val habits = database.proactiveHabitDao().getAllHabitsList()
+        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         val startOfDayMillis = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        // Revisamos si abriste la app de programación hoy
-        val targetApp = "com.sololearn" // Esto puede ser dinámico luego
-        val openCount = database.usageLogDao().getTodayOpenCount(targetApp, startOfDayMillis)
+        for (habit in habits) {
+            // Solo procesamos si es la hora configurada (o si queremos una ventana, pero el prompt dice "revisará la hora")
+            // Como el Worker corre cada hora o periódicamente, revisamos si coincide la hora
+            if (habit.triggerHour == currentHour) {
+                if (habit.isPhysical) {
+                    // Hábito físico: siempre notifica
+                    NotificationHelper.showReminderNotification(
+                        context = applicationContext,
+                        title = "Recordatorio: ${habit.name}",
+                        message = "¿Ya lo hiciste? ¡Es momento!"
+                    )
+                } else {
+                    // Hábito digital: revisa UsageLog
+                    val targetApp = habit.targetPackage ?: continue
+                    val openCount = database.usageLogDao().getTodayOpenCount(targetApp, startOfDayMillis)
 
-        if (openCount == 0) {
-            // ¡No hay acción! Lanzamos la notificación
-            NotificationHelper.showReminderNotification(
-                context = applicationContext,
-                title = "¡No rompas la racha!",
-                message = "Aún no has practicado programación hoy. ¿Tienes 10 minutos ahora?"
-            )
+                    if (openCount == 0) {
+                        NotificationHelper.showReminderNotification(
+                            context = applicationContext,
+                            title = "¡No rompas la racha!",
+                            message = "Aún no has usado ${habit.name} hoy. ¿Tienes 10 minutos ahora?"
+                        )
+                    }
+                }
+            }
         }
 
         return Result.success()

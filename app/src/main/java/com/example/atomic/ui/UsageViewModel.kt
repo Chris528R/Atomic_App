@@ -15,10 +15,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import com.example.atomic.util.resolveAppDisplayName
 
-class UsageViewModel(private val usageRepository: UsageRepository) : ViewModel() {
+class UsageViewModel(
+    private val usageRepository: UsageRepository,
+    private val timeDebtDao: com.example.atomic.data.TimeDebtDao
+) : ViewModel() {
 
     private val _logs = MutableStateFlow<List<UsageLog>>(emptyList())
     val logs: StateFlow<List<UsageLog>> = _logs.asStateFlow()
+
+    val debt: StateFlow<Int> = timeDebtDao.getDebtFlow()
+        .map { it ?: 0 }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0
+        )
 
     val chartData: StateFlow<List<ChartBarData>> = _logs.map { logs ->
         val aggregated = logs.groupBy { it.packageName }

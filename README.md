@@ -1,17 +1,43 @@
 # Atomic
 
-**Atomic** es una aplicación Android para el control de hábitos digitales. Intercepta la apertura de apps seleccionadas, muestra una pantalla de fricción que obliga al usuario a elegir un motivo antes de continuar, concede ventanas temporales de acceso (15 min) y registra cada desbloqueo en una base de datos local para analizar patrones de uso.
+**Atomic** es una solución integral para el control de hábitos digitales y productividad. A diferencia de un bloqueador común, Atomic utiliza psicología de fricción y una "economía de tiempo" para ayudarte a recuperar el control sobre tu dispositivo.
 
 ---
 
-## Objetivo del proyecto
+## 📖 Guía de Usuario (Manual de Módulos)
 
-Ayudar al usuario a tomar conciencia y control sobre el tiempo que pasa en apps concretas, combinando:
+### 1. Módulo de Aplicaciones (`Apps`)
+Es el panel de control principal para decidir qué apps interceptar.
+- **Bloqueo Inteligente:** Por defecto, Atomic protege tu tiempo de **YouTube, Facebook e Instagram**.
+- **Personalización:** Puedes buscar entre todas tus aplicaciones instaladas y activar el interruptor para añadir cualquier app a tu "lista negra" personal.
+- **Sugerencias de Reemplazo:** Permite configurar una "App Positiva" (ej. Duolingo) para que Atomic te la sugiera cada vez que intentes abrir una app bloqueada.
 
-- **Intercepción a nivel de sistema** (`AccessibilityService`) para detectar qué app está en primer plano.
-- **Overlay con Compose** (`SYSTEM_ALERT_WINDOW`) para la pantalla de fricción sobre otras apps.
-- **Persistencia local** (Room) para historial de motivos y accesos.
-- **UI principal** (Compose + ViewModel) para permisos y estadísticas en tiempo real.
+### 2. Módulo de Estadísticas (`Estadísticas`)
+Visualiza tu progreso y audita tu comportamiento digital.
+- **Estado de Cuenta de Deuda:** En la parte superior verás tu "Deuda de Tiempo" actual. Si es 0, verás una felicitación en verde. Si has forzado accesos, verás un panel rojo con los minutos acumulados.
+- **Gráficos de Uso:** Barras de tiempo real consumido y una dona de distribución que muestra tus motivos más frecuentes (ej. ¿Abres apps por "Aburrimiento" o por "Trabajo"?).
+- **Historial Detallado:** Un registro cronológico de cada vez que desbloqueaste una app.
+
+### 3. Módulo de Recordatorios (`Recordatorios`)
+Gestiona hábitos proactivos que van más allá del bloqueo de apps.
+- **Hábitos Físicos:** Configura recordatorios para tareas en el mundo real (ej. "Beber agua" o "Hacer flexiones").
+- **Hábitos Digitales:** Establece metas de uso para apps específicas.
+- **Notificaciones Inteligentes:** El sistema te notificará cada hora si es momento de realizar una de estas tareas o si te estás excediendo en una meta.
+
+### 4. Configuración de Horarios (`Schedules`)
+Define tus ventanas de libertad.
+- **Tiempo Libre:** Configura rangos horarios (ej. Fines de semana o de 20:00 a 22:00) donde el bloqueo se desactiva automáticamente, permitiéndote disfrutar de tus apps sin interrupciones.
+
+---
+
+## ⚖️ El Sistema de Deuda de Tiempo
+
+Atomic introduce el concepto de **Deuda de Tiempo** para penalizar el uso impulsivo:
+
+1. **La Multa:** Si intentas abrir una app bloqueada más de 6 veces al día y decides usar la opción **"Forzar apertura"**, el sistema te dará solo 2 minutos de acceso pero te cargará una **multa de 15 minutos** de deuda.
+2. **El Cobro Automático:** La deuda no desaparece sola. En tu próximo acceso legítimo (cuando pidas 15 minutos por un motivo válido), el sistema restará tu deuda de ese tiempo.
+    - *Ejemplo:* Si debes 10 minutos y pides un pase de 15, Atomic te concederá solo 5 minutos.
+3. **Transparencia:** La pantalla de fricción te mostrará la "Matemática de Cobro" en tiempo real antes de que aceptes el acceso.
 
 ---
 

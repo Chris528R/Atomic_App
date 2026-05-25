@@ -3,6 +3,7 @@ package com.example.atomic.service
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
+import android.widget.Toast
 import com.example.atomic.data.AtomicDatabase
 import com.example.atomic.data.UsageLog
 import com.example.atomic.data.repository.ActivePassRepositoryImpl
@@ -229,6 +230,13 @@ class AppTrackerService : AccessibilityService() {
                             if (isForced) {
                                 finalDurationMin = 2
                                 database.timeDebtDao().addDebt(15)
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "⚠️ Has adquirido 15 minutos de deuda para tu yo de mañana",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             } else {
                                 if (debt > 0) {
                                     val penaltyToApply = kotlin.math.min(debt, finalDurationMin - 1)

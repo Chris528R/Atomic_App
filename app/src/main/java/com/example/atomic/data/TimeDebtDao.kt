@@ -8,6 +8,9 @@ import androidx.room.Query
 @Dao
 interface TimeDebtDao {
     @Query("SELECT debtMinutes FROM time_debt WHERE id = 1")
+    fun getDebtFlow(): kotlinx.coroutines.flow.Flow<Int?>
+
+    @Query("SELECT debtMinutes FROM time_debt WHERE id = 1")
     suspend fun getDebt(): Int?
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

@@ -43,6 +43,7 @@ fun StatsScreen(
 ) {
     val logs by viewModel.logs.collectAsStateWithLifecycle()
     val chartData by viewModel.chartData.collectAsStateWithLifecycle()
+    val debt by viewModel.debt.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -67,6 +68,57 @@ fun StatsScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
         ) {
+            item {
+                if (debt > 0) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Deuda acumulada",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                "$debt minutos",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                "Se cobrarán en tus próximos desbloqueos.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                } else if (logs.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)) // Un verde suave
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "¡Vas por buen camino!",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2E7D32)
+                            )
+                            Text(
+                                "No tienes deuda de tiempo acumulada.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF2E7D32)
+                            )
+                        }
+                    }
+                }
+            }
+
             if (logs.isEmpty()) {
                 item {
                     Text(
