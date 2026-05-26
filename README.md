@@ -74,10 +74,15 @@ Atomic introduce el concepto de **Deuda de Tiempo** para penalizar el uso impuls
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                    MainActivity (launcher)                        │
-│  AtomicApp ─ NavigationBar: [ Apps | Estadísticas ]                │
+│  AtomicApp ─ NavigationBar: [ Apps | Estadísticas | Inteligencia | Hábitos | Horarios ] │
+│    · AtomicTopAppBar (Header global con botón de Ajustes)        │
+│    · SettingsScreen (Configuración y Respaldo JSON)               │
 │    · OnboardingScreen + PermissionsViewModel                     │
 │    · BlockedAppsScreen + BlockedAppsViewModel ← Flow ← Room      │
 │    · StatsScreen (UsageBarChart/DonutChart) + UsageViewModel     │
+│    · InsightsScreen + InsightsViewModel                          │
+│    · HabitsScreen (Tabs: Sustitución / Recordatorios)            │
+│    · ScheduleSettingsScreen + ScheduleSettingsViewModel          │
 └────────────────────────────┬─────────────────────────────────────┘
                              │ lectura (Flow)
 ┌────────────────────────────▼─────────────────────────────────────┐
@@ -100,7 +105,9 @@ Atomic introduce el concepto de **Deuda de Tiempo** para penalizar el uso impuls
 | Componente | Ubicación | Responsabilidad |
 |------------|-----------|-----------------|
 | `MainActivity` | `MainActivity.kt` | Punto de entrada; hospeda `AtomicApp` y ambos ViewModels. |
-| `AtomicApp` | `ui/AtomicApp.kt` | Navegación inferior entre Apps y Estadísticas. |
+| `AtomicApp` | `ui/AtomicApp.kt` | Navegación inferior y manejo de configuración global. |
+| `AtomicTopAppBar` | `ui/components/` | Encabezado estándar para todas las pantallas principales. |
+| `SettingsScreen` | `ui/SettingsScreen.kt` | Configuración visual (Tema) y exportación/importación JSON. |
 | `OnboardingScreen` | `ui/OnboardingScreen.kt` | Onboarding guiado de permisos (overlay, accesibilidad, batería). |
 | `PermissionsViewModel` | `ui/PermissionsViewModel.kt` | Estado de permisos; refresco en `onResume`. |
 | `StatsScreen` | `ui/StatsScreen.kt` | Resumen visual (UsageBarChart/MotivesDonutChart) e historial. |
@@ -274,19 +281,27 @@ Atomic/
 │       │   │   │   ├── AppTrackerService.kt
 │       │   │   │   └── HabitReminderWorker.kt
 │       │   │   ├── ui/
+│       │   │   │   ├── components/
+│       │   │   │   │   └── AtomicTopAppBar.kt
 │       │   │   │   ├── AtomicApp.kt
 │       │   │   │   ├── BlockedAppsScreen.kt
 │       │   │   │   ├── BlockedAppsViewModel.kt
 │       │   │   │   ├── BlockedAppsViewModelFactory.kt
 │       │   │   │   ├── FrictionScreen.kt
+│       │   │   │   ├── HabitManagerScreen.kt
+│       │   │   │   ├── HabitManagerViewModel.kt
 │       │   │   │   ├── HabitReplacementScreen.kt
 │       │   │   │   ├── HabitReplacementViewModel.kt
 │       │   │   │   ├── HabitReplacementViewModelFactory.kt
+│       │   │   │   ├── HabitsScreen.kt
+│       │   │   │   ├── InsightsScreen.kt
+│       │   │   │   ├── InsightsViewModel.kt
 │       │   │   │   ├── MotivesDonutChart.kt
 │       │   │   │   ├── OnboardingScreen.kt
 │       │   │   │   ├── PermissionsViewModel.kt
 │       │   │   │   ├── ScheduleSettingsScreen.kt
 │       │   │   │   ├── ScheduleSettingsViewModel.kt
+│       │   │   │   ├── SettingsScreen.kt
 │       │   │   │   ├── StatsScreen.kt
 │       │   │   │   ├── UsageBarChart.kt
 │       │   │   │   ├── UsageViewModel.kt
@@ -296,6 +311,7 @@ Atomic/
 │       │   │   └── util/
 │       │   │       ├── AppDisplayNames.kt
 │       │   │       ├── AppLauncher.kt
+│       │   │       ├── BackupHelper.kt
 │       │   │       ├── InstalledApps.kt
 │       │   │       ├── NotificationHelper.kt
 │       │   │       └── PermissionChecker.kt
@@ -417,7 +433,7 @@ Android Studio → **App Inspection** → **Database Inspector** → `atomic_dat
 | Área | Estado |
 |------|--------|
 | Sincronización entre dispositivos | ⏳ Planeado |
-| Exportación de datos (CSV / JSON) | ⏳ Planeado |
+| Exportación de datos (JSON) e Importación | ✅ Implementado |
 | Backup en nube / cuentas | ⏳ Planeado |
 
 ### Ideas experimentales
