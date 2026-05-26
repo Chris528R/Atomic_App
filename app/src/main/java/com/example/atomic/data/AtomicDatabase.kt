@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [UsageLog::class, BlockedApp::class, ActivePass::class, TimeDebt::class, ScheduleRule::class, HabitReplacement::class, ProactiveHabit::class],
-    version = 9,
+    entities = [UsageLog::class, BlockedApp::class, ActivePass::class, TimeDebt::class, ScheduleRule::class, HabitReplacement::class, ProactiveHabit::class, HabitCompletion::class],
+    version = 10,
     exportSchema = false,
 )
 abstract class AtomicDatabase : RoomDatabase() {
@@ -18,6 +18,7 @@ abstract class AtomicDatabase : RoomDatabase() {
     abstract fun scheduleRuleDao(): ScheduleRuleDao
     abstract fun habitReplacementDao(): HabitReplacementDao
     abstract fun proactiveHabitDao(): ProactiveHabitDao
+    abstract fun habitCompletionDao(): HabitCompletionDao
 
     companion object {
         @Volatile

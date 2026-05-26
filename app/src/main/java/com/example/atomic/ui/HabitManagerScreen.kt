@@ -13,8 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import com.example.atomic.data.ProactiveHabit
 import com.example.atomic.util.InstalledAppInfo
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,8 +64,8 @@ fun HabitManagerScreen(
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(uiState.habits, key = { it.id }) { habit ->
-                        HabitItem(habit = habit, onDelete = { viewModel.deleteHabit(habit) })
+                    items(uiState.habits, key = { it.habit.id }) { progressItem ->
+                        HabitItem(progressItem = progressItem, onDelete = { viewModel.deleteHabit(progressItem.habit) })
                     }
                 }
             }
@@ -79,26 +85,71 @@ fun HabitManagerScreen(
 }
 
 @Composable
-fun HabitItem(habit: ProactiveHabit, onDelete: () -> Unit) {
+fun HabitItem(progressItem: HabitWithProgress, onDelete: () -> Unit) {
+    val habit = progressItem.habit
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = habit.name, fontWeight = FontWeight.Bold)
-                val typeText = if (habit.isPhysical) "Físico" else "Digital (${habit.targetPackage?.split(".")?.last()})"
-                val timeStr = String.format("%02d:%02d", habit.triggerHour, habit.triggerMinute)
-                Text(text = "$typeText - Recordatorio: $timeStr", style = MaterialTheme.typography.bodySmall)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = habit.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    val typeText = if (habit.isPhysical) "Físico" else "Digital (${habit.targetPackage?.split(".")?.last()})"
+                    val timeStr = String.format("%02d:%02d", habit.triggerHour, habit.triggerMinute)
+                    Text(text = "$typeText - Recordatorio: $timeStr", style = MaterialTheme.typography.bodySmall)
+                }
+                
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (progressItem.streak > 0) {
+                        Text(
+                            text = "🔥 ${progressItem.streak} días",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 7 Days UI
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val today = LocalDate.now()
+                progressItem.last7Days.forEachIndexed { index, isDone ->
+                    val dateForColumn = today.minusDays((6 - index).toLong())
+                    val dayName = dateForColumn.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("es", "ES")).take(1).uppercase()
+                    
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = dayName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isDone) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                                )
+                        )
+                    }
+                }
             }
         }
     }

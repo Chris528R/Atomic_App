@@ -56,7 +56,11 @@ class MainActivity : ComponentActivity() {
         HabitReplacementViewModelFactory(database)
     }
     private val habitManagerViewModel: HabitManagerViewModel by viewModels {
-        HabitManagerViewModelFactory(ProactiveHabitRepositoryImpl(database.proactiveHabitDao()), applicationContext)
+        HabitManagerViewModelFactory(
+            ProactiveHabitRepositoryImpl(database.proactiveHabitDao()),
+            database.habitCompletionDao(),
+            applicationContext
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

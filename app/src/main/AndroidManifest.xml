@@ -48,6 +48,15 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <receiver
+            android:name=".service.HabitActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.atomic.ACTION_HABIT_DONE" />
+                <action android:name="com.example.atomic.ACTION_HABIT_LATER" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

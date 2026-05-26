@@ -28,6 +28,7 @@ class HabitReminderWorker(
                     // Hábito físico: siempre notifica
                     NotificationHelper.showReminderNotification(
                         context = applicationContext,
+                        habitId = habit.id,
                         title = "Recordatorio: ${habit.name}",
                         message = "¿Ya lo hiciste? ¡Es momento!"
                     )
@@ -39,6 +40,7 @@ class HabitReminderWorker(
                     if (openCount == 0) {
                         NotificationHelper.showReminderNotification(
                             context = applicationContext,
+                            habitId = habit.id,
                             title = "¡No rompas la racha!",
                             message = "Aún no has usado ${habit.name} hoy. ¿Tienes 10 minutos ahora?"
                         )
