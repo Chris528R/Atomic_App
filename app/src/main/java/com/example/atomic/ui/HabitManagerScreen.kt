@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.atomic.data.ProactiveHabit
@@ -23,6 +24,7 @@ fun HabitManagerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
         modifier = modifier,
@@ -68,8 +70,8 @@ fun HabitManagerScreen(
         AddHabitDialog(
             installedApps = uiState.installedApps,
             onDismiss = { showAddDialog = false },
-            onConfirm = { name, pkg, hour, isPhysical ->
-                viewModel.addHabit(name, pkg, hour, isPhysical)
+            onConfirm = { name, pkg, hour, minute, isPhysical ->
+                viewModel.addHabit(name, pkg, hour, minute, isPhysical)
                 showAddDialog = false
             }
         )
@@ -92,7 +94,8 @@ fun HabitItem(habit: ProactiveHabit, onDelete: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = habit.name, fontWeight = FontWeight.Bold)
                 val typeText = if (habit.isPhysical) "Físico" else "Digital (${habit.targetPackage?.split(".")?.last()})"
-                Text(text = "$typeText - Recordatorio: ${habit.triggerHour}:00", style = MaterialTheme.typography.bodySmall)
+                val timeStr = String.format("%02d:%02d", habit.triggerHour, habit.triggerMinute)
+                Text(text = "$typeText - Recordatorio: $timeStr", style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
@@ -106,13 +109,15 @@ fun HabitItem(habit: ProactiveHabit, onDelete: () -> Unit) {
 fun AddHabitDialog(
     installedApps: List<InstalledAppInfo>,
     onDismiss: () -> Unit,
-    onConfirm: (String, String?, Int, Boolean) -> Unit
+    onConfirm: (String, String?, Int, Int, Boolean) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var isPhysical by remember { mutableStateOf(true) }
     var selectedApp by remember { mutableStateOf<InstalledAppInfo?>(null) }
-    var triggerHour by remember { mutableStateOf(20) }
+    var triggerHour by remember { mutableIntStateOf(20) }
+    var triggerMinute by remember { mutableIntStateOf(0) }
     var isAppMenuExpanded by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -161,18 +166,15 @@ fun AddHabitDialog(
                     }
                 }
 
-                Text("Hora del recordatorio: $triggerHour:00")
-                Slider(
-                    value = triggerHour.toFloat(),
-                    onValueChange = { triggerHour = it.toInt() },
-                    valueRange = 0f..23f,
-                    steps = 23
-                )
+                val timeStr = String.format("%02d:%02d", triggerHour, triggerMinute)
+                OutlinedButton(onClick = { showTimePicker = true }) {
+                    Text("Hora del recordatorio: $timeStr")
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(name, selectedApp?.packageName, triggerHour, isPhysical) },
+                onClick = { onConfirm(name, selectedApp?.packageName, triggerHour, triggerMinute, isPhysical) },
                 enabled = name.isNotBlank() && (isPhysical || selectedApp != null)
             ) {
                 Text("Guardar")
@@ -184,4 +186,23 @@ fun AddHabitDialog(
             }
         }
     )
+
+    if (showTimePicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = triggerHour,
+            initialMinute = triggerMinute,
+            is24Hour = false
+        )
+        TimePickerDialog(
+            title = "Seleccionar hora",
+            onCancel = { showTimePicker = false },
+            onConfirm = {
+                triggerHour = timePickerState.hour
+                triggerMinute = timePickerState.minute
+                showTimePicker = false
+            }
+        ) {
+            TimePicker(state = timePickerState)
+        }
+    }
 }

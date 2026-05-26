@@ -42,13 +42,14 @@ class HabitManagerViewModel(
         initialValue = HabitManagerUiState(isLoading = true)
     )
 
-    fun addHabit(name: String, targetPackage: String?, triggerHour: Int, isPhysical: Boolean) {
+    fun addHabit(name: String, targetPackage: String?, triggerHour: Int, triggerMinute: Int, isPhysical: Boolean) {
         viewModelScope.launch {
             repository.insertHabit(
                 ProactiveHabit(
                     name = name,
                     targetPackage = targetPackage,
                     triggerHour = triggerHour,
+                    triggerMinute = triggerMinute,
                     isPhysical = isPhysical
                 )
             )

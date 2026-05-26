@@ -12,9 +12,10 @@ data class PermissionsUiState(
     val isOverlayGranted: Boolean = false,
     val isAccessibilityGranted: Boolean = false,
     val isBatteryOptimized: Boolean = false,
+    val isNotificationGranted: Boolean = false,
 ) {
     val allGranted: Boolean
-        get() = isOverlayGranted && isAccessibilityGranted && isBatteryOptimized
+        get() = isOverlayGranted && isAccessibilityGranted && isBatteryOptimized && isNotificationGranted
 }
 
 class PermissionsViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,6 +30,7 @@ class PermissionsViewModel(application: Application) : AndroidViewModel(applicat
                 isOverlayGranted = PermissionChecker.hasOverlayPermission(context),
                 isAccessibilityGranted = PermissionChecker.isAccessibilityServiceEnabled(context),
                 isBatteryOptimized = PermissionChecker.isIgnoringBatteryOptimizations(context),
+                isNotificationGranted = PermissionChecker.hasNotificationPermission(context),
             )
         }
     }

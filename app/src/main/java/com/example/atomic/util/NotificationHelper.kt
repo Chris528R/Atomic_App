@@ -3,6 +3,7 @@ package com.example.atomic.util
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import androidx.core.app.NotificationCompat
 
 object NotificationHelper {
@@ -29,5 +30,13 @@ object NotificationHelper {
             .build()
 
         notificationManager.notify(1001, notification)
+    }
+
+    fun testNotification(context: Context) {
+        showReminderNotification(
+            context,
+            "Prueba de Notificación",
+            "Si puedes ver esto, las notificaciones están funcionando correctamente."
+        )
     }
 }

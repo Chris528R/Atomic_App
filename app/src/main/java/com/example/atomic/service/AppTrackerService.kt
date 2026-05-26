@@ -43,6 +43,9 @@ class AppTrackerService : AccessibilityService() {
 
     /** Paquete → instante de expiración del pase (epoch millis). */
     private val unlockedApps = mutableMapOf<String, Long>()
+    
+    /** Paquete -> última vez que se registró un pase por horario libre (epoch millis) */
+    private val freeTimeLoggedSession = mutableMapOf<String, Long>()
 
     @Volatile
     private var dynamicBlockedApps: List<String> = emptyList()
@@ -57,6 +60,9 @@ class AppTrackerService : AccessibilityService() {
 
     val positiveApps = listOf("com.sololearn", "com.getmimo")
     private var lastLoggedPositiveApp: String? = null
+    
+    @Volatile
+    private var lastCancelTime: Long = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -143,6 +149,9 @@ class AppTrackerService : AccessibilityService() {
 
         if (!dynamicBlockedApps.contains(packageName)) return
 
+        // Evitar múltiples pantallas de fricción seguidas después de cancelar
+        if (System.currentTimeMillis() - lastCancelTime < 2000L) return
+
         val currentTime = System.currentTimeMillis()
         val expiryTime = unlockedApps[packageName] ?: 0L
 
@@ -175,25 +184,27 @@ class AppTrackerService : AccessibilityService() {
 
         // 2. EVALUAR HORARIOS LIBRES
         if (TimeRuleEngine.isFreeTime(dynamicScheduleRules, LocalDateTime.now())) {
-            val freeTimeDurationMin = UnlockReason.FREE_TIME.allowedMinutes
+            val lastLogTime = freeTimeLoggedSession[packageName] ?: 0L
             val startTime = System.currentTimeMillis()
             
-            // Conceder el pase silenciosamente
-            unlockedApps[packageName] = startTime + (freeTimeDurationMin * 60 * 1000L)
-            
-            // Registrar en Room para no perder las estadísticas, pero sin lanzar la UI
-            serviceScope.launch {
-                activePassRepository.insertPass(com.example.atomic.data.ActivePass(packageName, unlockedApps[packageName]!!))
-                val insertedId = usageRepository.insertLog(
-                    UsageLog(
-                        packageName = packageName,
-                        reason = UnlockReason.FREE_TIME.title,
-                        timestamp = startTime,
-                        durationMinutes = freeTimeDurationMin
+            // Registrar en Room solo una vez cada X min para no generar spam
+            if (startTime - lastLogTime > UnlockReason.FREE_TIME.allowedMinutes * 60 * 1000L) {
+                freeTimeLoggedSession[packageName] = startTime
+                serviceScope.launch {
+                    val insertedId = usageRepository.insertLog(
+                        UsageLog(
+                            packageName = packageName,
+                            reason = UnlockReason.FREE_TIME.title,
+                            timestamp = startTime,
+                            durationMinutes = UnlockReason.FREE_TIME.allowedMinutes
+                        )
                     )
-                )
-                // Actualizar estado para medir uso real (Fase 1)
-                currentActiveLogId = insertedId
+                    // Actualizar estado para medir uso real (Fase 1)
+                    currentActiveLogId = insertedId
+                    currentActivePackage = packageName
+                    currentSessionStartTime = startTime
+                }
+            } else if (currentActivePackage != packageName) {
                 currentActivePackage = packageName
                 currentSessionStartTime = startTime
             }
@@ -264,9 +275,11 @@ class AppTrackerService : AccessibilityService() {
                         }
                     },
                     onRedirect = { targetPackage ->
+                        lastCancelTime = System.currentTimeMillis()
                         AppLauncher.launchApp(this@AppTrackerService, targetPackage)
                     },
                     onCancel = {
+                        lastCancelTime = System.currentTimeMillis()
                         val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                             addCategory(Intent.CATEGORY_HOME)
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK

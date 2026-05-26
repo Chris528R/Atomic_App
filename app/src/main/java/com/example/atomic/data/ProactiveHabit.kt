@@ -9,5 +9,6 @@ data class ProactiveHabit(
     val name: String,
     val targetPackage: String? = null,
     val triggerHour: Int, // 0-23
+    val triggerMinute: Int = 0, // 0-59
     val isPhysical: Boolean
 )

@@ -17,8 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import com.example.atomic.ui.components.AtomicTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -39,6 +38,7 @@ import java.util.Locale
 @Composable
 fun StatsScreen(
     viewModel: UsageViewModel,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val logs by viewModel.logs.collectAsStateWithLifecycle()
@@ -48,17 +48,9 @@ fun StatsScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.stats_title),
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
+            AtomicTopAppBar(
+                title = stringResource(R.string.stats_title),
+                onSettingsClick = onSettingsClick
             )
         },
     ) { paddingValues ->

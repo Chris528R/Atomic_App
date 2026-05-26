@@ -6,8 +6,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -28,8 +28,7 @@ private enum class MainTab {
     BlockedApps,
     Stats,
     Insights,
-    Replacements,
-    Reminders,
+    Habits,
     Schedule,
 }
 
@@ -44,6 +43,12 @@ fun AtomicApp(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.BlockedApps) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+
+    if (showSettings) {
+        SettingsScreen(onBack = { showSettings = false })
+        return
+    }
 
     Scaffold(
         modifier = modifier,
@@ -69,16 +74,10 @@ fun AtomicApp(
                     label = { Text(stringResource(R.string.nav_insights)) },
                 )
                 NavigationBarItem(
-                    selected = selectedTab == MainTab.Replacements,
-                    onClick = { selectedTab = MainTab.Replacements },
-                    icon = { Icon(Icons.Filled.Build, contentDescription = null) },
-                    label = { Text(stringResource(R.string.nav_replacements)) },
-                )
-                NavigationBarItem(
-                    selected = selectedTab == MainTab.Reminders,
-                    onClick = { selectedTab = MainTab.Reminders },
-                    icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
-                    label = { Text("Recordatorios") },
+                    selected = selectedTab == MainTab.Habits,
+                    onClick = { selectedTab = MainTab.Habits },
+                    icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
+                    label = { Text("Hábitos") },
                 )
                 NavigationBarItem(
                     selected = selectedTab == MainTab.Schedule,
@@ -92,35 +91,33 @@ fun AtomicApp(
         when (selectedTab) {
             MainTab.BlockedApps -> BlockedAppsScreen(
                 viewModel = blockedAppsViewModel,
+                onSettingsClick = { showSettings = true },
                 modifier = Modifier.padding(innerPadding),
             )
 
             MainTab.Stats -> StatsScreen(
                 viewModel = usageViewModel,
+                onSettingsClick = { showSettings = true },
                 modifier = Modifier.padding(innerPadding),
             )
             
             MainTab.Insights -> InsightsScreen(
                 viewModel = insightsViewModel,
+                onSettingsClick = { showSettings = true },
                 modifier = Modifier.padding(innerPadding),
             )
             
-            MainTab.Replacements -> {
+            MainTab.Habits -> {
                 val uiState by blockedAppsViewModel.uiState.collectAsState()
                 val installedApps = uiState.installedApps
                 val blockedApps = installedApps.filter { it.isBlocked }.map { it.packageName }
-                HabitReplacementScreen(
-                    viewModel = habitReplacementViewModel,
+                HabitsScreen(
+                    replacementViewModel = habitReplacementViewModel,
+                    managerViewModel = habitManagerViewModel,
                     blockedApps = blockedApps,
                     installedApps = installedApps,
+                    onSettingsClick = { showSettings = true },
                     modifier = Modifier.padding(innerPadding),
-                )
-            }
-
-            MainTab.Reminders -> {
-                HabitManagerScreen(
-                    viewModel = habitManagerViewModel,
-                    modifier = Modifier.padding(innerPadding)
                 )
             }
 
@@ -131,7 +128,8 @@ fun AtomicApp(
                         rules = rules,
                         onToggleRule = { rule, isEnabled -> scheduleSettingsViewModel.toggleRule(rule, isEnabled) },
                         onAddNewRule = { rule -> scheduleSettingsViewModel.addRule(rule) },
-                        onDeleteRule = { rule -> scheduleSettingsViewModel.deleteRule(rule) }
+                        onDeleteRule = { rule -> scheduleSettingsViewModel.deleteRule(rule) },
+                        onSettingsClick = { showSettings = true }
                     )
                 }
             }

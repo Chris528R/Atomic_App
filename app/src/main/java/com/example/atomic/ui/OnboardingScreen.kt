@@ -1,6 +1,10 @@
 package com.example.atomic.ui
 
+import android.Manifest
 import android.content.Context
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -25,8 +29,15 @@ fun OnboardingScreen(
     context: Context,
     onOnboardingComplete: () -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val totalPages = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) 4 else 3
+    val pagerState = rememberPagerState(pageCount = { totalPages })
     val coroutineScope = rememberCoroutineScope()
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> 
+        // El refresh se dispara por onResume en MainActivity
+    }
 
     Scaffold(
         bottomBar = {
@@ -84,8 +95,25 @@ fun OnboardingScreen(
                     description = "Android es agresivo cerrando apps. Si no das este permiso, el sistema apagará a Atomic en un par de horas.",
                     isGranted = uiState.isBatteryOptimized,
                     onRequest = { PermissionChecker.requestIgnoreBatteryOptimizations(context) },
-                    onNext = onOnboardingComplete
+                    onNext = {
+                        if (totalPages > 3) {
+                            coroutineScope.launch { pagerState.animateScrollToPage(3) }
+                        } else {
+                            onOnboardingComplete()
+                        }
+                    }
                 )
+                3 -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    OnboardingPage(
+                        title = "Notificaciones",
+                        description = "Para que no olvides tus hábitos, Atomic necesita enviarte recordatorios programados.",
+                        isGranted = uiState.isNotificationGranted,
+                        onRequest = { 
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        },
+                        onNext = onOnboardingComplete
+                    )
+                }
             }
         }
     }
